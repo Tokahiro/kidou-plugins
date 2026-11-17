@@ -1,0 +1,9 @@
+# Kidō's list of plugins. Kidō reads this file when you open "Add plugins".
+
+[[plugin]]
+id = "gog_plugin"
+name = "GOG Galaxy"
+version = "1.0.0"
+about = "Your GOG games, read from GOG Galaxy"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/gog_plugin-1.0.0.kidouplug"
+sha256 = "8689f10213852477c0b3589465be6384459be6d4de902c9c3d05f5725b530b8f"
