@@ -22,7 +22,7 @@ name = "Traumbild"
 version = "1.0.0"
 about = "Home layout: a row of large square covers under the game's art"
 package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/dreamscape-1.0.0.kidouplug"
-sha256 = "69212ef7e760e2f892943d13e3ecb8a8e30317c214b0ed5d5c3b48e8b5f3f1a8"
+sha256 = "ef246b6d6ec59ad6d0aba01499a3076d5703309bafd78abe510bac6ba35cf770"
 
 [[plugin]]
 id = "procession"
@@ -38,7 +38,7 @@ name = "Schattenspiel"
 version = "1.0.0"
 about = "Home layout: the art framed by page lanes at both edges"
 package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shadowplay-1.0.0.kidouplug"
-sha256 = "c2c6a02ba082502ec3e7b2d0be9d7b4a91880fa3a4fbf68ba3dff566813624aa"
+sha256 = "42c37086830cf2cf565c53e7781e32d9433281b73218738b1038a66fd017a6da"
 
 [[plugin]]
 id = "shrine"
@@ -46,4 +46,4 @@ name = "Schrein"
 version = "1.0.0"
 about = "Home layout: the pages in a rail at the left, with group tabs"
 package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shrine-1.0.0.kidouplug"
-sha256 = "5151f55a2a657b240cf61f15b64a10c8d8236f74e8246c5af90165dceb4d4096"
+sha256 = "03cf3e2bc2e6a0047dc3a3eb2bfa04ea164a5605ba37895217dcf6874e6c8e38"
