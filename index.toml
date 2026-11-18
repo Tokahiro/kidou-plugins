@@ -3,47 +3,58 @@
 [[plugin]]
 id = "gog_plugin"
 name = "GOG Galaxy"
-version = "1.0.0"
+category = "store"
+version = "1.1.0"
 about = "Your GOG games, read from GOG Galaxy"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/gog_plugin-1.0.0.kidouplug"
-sha256 = "8689f10213852477c0b3589465be6384459be6d4de902c9c3d05f5725b530b8f"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/gog_plugin-1.1.0.kidouplug"
+sha256 = "12d7e9026fe8d441ed8c462ddecb8173e04d80829a1b7c219b0c9cbc14bbd22a"
 
 [[plugin]]
 id = "moonlight"
 name = "Mondlicht"
-version = "1.0.0"
+category = "layout"
+version = "1.1.0"
 about = "Home layout: the selected game's large cover in the middle of a still carousel"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/moonlight-1.0.0.kidouplug"
-sha256 = "0b622c652f1e637a91d7fb1c8ac587f687c8236d0f1e62a5a40d5595de512e8b"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/moonlight-1.1.0.kidouplug"
+sha256 = "159d4d595cfdb76145d6f6cd7f38dc42a14e63b91f80d0a0ef250b1a3d4c17e0"
 
 [[plugin]]
 id = "dreamscape"
 name = "Traumbild"
-version = "1.1.0"
+category = "layout"
+version = "1.2.0"
 about = "Home layout: a row of large square covers under the game's art"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/dreamscape-1.1.0.kidouplug"
-sha256 = "35f6da2adf3d3c304d41793106a3835e569c72162a5aa1aaa22012fc823b98b9"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/dreamscape-1.2.0.kidouplug"
+sha256 = "ae5377d8564fdbfde2f2803fb40440e985cea5b9432961cbaa87c2c609e3758b"
 
 [[plugin]]
 id = "procession"
 name = "Prozession"
-version = "1.1.0"
+category = "layout"
+version = "1.2.0"
 about = "Home layout: the selected game's cover large on a lit stage, with store tabs"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/procession-1.1.0.kidouplug"
-sha256 = "7612503555abf1fdc4ff6b4cc92198fdfa1f8f8f581fe9c0dc5bfdec7a7a1c6c"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/procession-1.2.0.kidouplug"
+sha256 = "ecc39286fcae978415f3ae435daca4d0a40e33c0980eb8b7a0e8280cd90f1fe6"
 
 [[plugin]]
 id = "shadowplay"
 name = "Schattenspiel"
-version = "1.1.0"
+category = "layout"
+version = "1.2.0"
 about = "Home layout: the art framed by page lanes at both edges"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shadowplay-1.1.0.kidouplug"
-sha256 = "a79138ef23447ae637380270fab32b9dc03b388800f34ed443ba03285c74ee10"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shadowplay-1.2.0.kidouplug"
+sha256 = "51665576d0e8b7a83ffcc66348982af57f85f01e2b19ac61520c2b0ec861dc1c"
 
 [[plugin]]
 id = "shrine"
 name = "Schrein"
-version = "1.1.0"
+category = "layout"
+version = "1.2.0"
 about = "Home layout: the pages in a rail at the left, with group tabs"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shrine-1.1.0.kidouplug"
-sha256 = "02bb226263002ce87cf074fb69cf738f836773b19330ffa5ba1a0daedcd42fc8"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shrine-1.2.0.kidouplug"
+sha256 = "6dfc3226527b40e7b67b8412493a5cd2bef4fb2f714c124535a0e5c7edb657ec"
+
+[[pack]]
+id = "home_layouts"
+name = "Alle Startseiten"
+plugins = ["moonlight", "dreamscape", "procession", "shadowplay", "shrine"]
