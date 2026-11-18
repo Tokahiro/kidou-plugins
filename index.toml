@@ -7,3 +7,43 @@ version = "1.0.0"
 about = "Your GOG games, read from GOG Galaxy"
 package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/gog_plugin-1.0.0.kidouplug"
 sha256 = "8689f10213852477c0b3589465be6384459be6d4de902c9c3d05f5725b530b8f"
+
+[[plugin]]
+id = "moonlight"
+name = "Mondlicht"
+version = "1.0.0"
+about = "Home layout: the selected game's large cover in the middle of a still carousel"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/moonlight-1.0.0.kidouplug"
+sha256 = "0b622c652f1e637a91d7fb1c8ac587f687c8236d0f1e62a5a40d5595de512e8b"
+
+[[plugin]]
+id = "dreamscape"
+name = "Traumbild"
+version = "1.0.0"
+about = "Home layout: a row of large square covers under the game's art"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/dreamscape-1.0.0.kidouplug"
+sha256 = "69212ef7e760e2f892943d13e3ecb8a8e30317c214b0ed5d5c3b48e8b5f3f1a8"
+
+[[plugin]]
+id = "procession"
+name = "Prozession"
+version = "1.0.0"
+about = "Home layout: the selected game's cover large on a lit stage, with store tabs"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/procession-1.0.0.kidouplug"
+sha256 = "2f91d687984e433380eb54689d3e99ff5bdacd13d0aede86587c1e7853b26203"
+
+[[plugin]]
+id = "shadowplay"
+name = "Schattenspiel"
+version = "1.0.0"
+about = "Home layout: the art framed by page lanes at both edges"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shadowplay-1.0.0.kidouplug"
+sha256 = "c2c6a02ba082502ec3e7b2d0be9d7b4a91880fa3a4fbf68ba3dff566813624aa"
+
+[[plugin]]
+id = "shrine"
+name = "Schrein"
+version = "1.0.0"
+about = "Home layout: the pages in a rail at the left, with group tabs"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shrine-1.0.0.kidouplug"
+sha256 = "5151f55a2a657b240cf61f15b64a10c8d8236f74e8246c5af90165dceb4d4096"
