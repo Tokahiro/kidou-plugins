@@ -107,11 +107,11 @@ component MoonCover {
             + (Sizes.arc-opacity(root.step + 1) - Sizes.arc-opacity(root.step)) * root.part;
     // Past the last whole place, it fades out over one place's slide.
     property <float> leaving: clamp(root.shown + 1 - root.far, 0, 1);
-    property <length> lift: root.focused && !root.theme.reduced-motion
-        ? root.theme.focus-lift-cover : 0;
+    property <length> lifted: root.focused ? root.theme.focus-lift-cover : 0;
+    property <length> lift: root.theme.reduced-motion ? 0 : root.lifted;
     property <length> radius: root.theme.radius-cover;
 
-    animate lift {
+    animate lifted {
         duration: 130ms;
         easing: cubic-bezier(0.22, 1, 0.36, 1);
     }
