@@ -11,7 +11,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,6 +28,10 @@ jobs:
             printf 'A package never changes once listed; a new version gets a new file:\n%s\n' "$changed"
             exit 1
           fi
+      # Slint's compiler, which the layout check builds, takes minutes without it.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo test --locked
       - run: cargo xtask check
 
@@ -37,7 +41,7 @@ jobs:
     if: github.event_name == 'push'
     needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     concurrency: pack
     outputs:
       packed: ${{ steps.pack.outputs.packed }}
@@ -47,6 +51,9 @@ jobs:
         with:
           ref: main
           persist-credentials: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          save-if: false
       - id: pack
         name: Pack new versions
         run: |

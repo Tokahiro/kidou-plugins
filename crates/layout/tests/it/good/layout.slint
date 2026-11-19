@@ -1,0 +1,164 @@
+// A sample layout by someone else: a still carousel over the focused game's stage art, the
+// focused cover lifted in the middle, its logo, title and facts under it, the tabs over it, a
+// mark from the package's own folder, and a card while the library is empty.
+import {
+    LayoutTile, LayoutHero, LayoutEmptyWords, LayoutTheme, LayoutZone, LayoutPlace,
+} from "kidou-layout-3.slint";
+
+component Cover {
+    in property <LayoutTile> tile;
+    in property <bool> focused;
+    in property <LayoutTheme> theme;
+    property <length> lift: self.focused && !self.theme.reduced-motion
+        ? -self.theme.focus-lift-cover : 0;
+    animate lift { duration: 180ms; easing: ease-out; }
+    width: 240 * self.theme.unit;
+    height: 360 * self.theme.unit;
+    Rectangle {
+        y: -root.lift;
+        border-radius: root.theme.radius-cover;
+        clip: true;
+        background: #222;
+        Image { width: 100%; height: 100%; source: root.tile.art; image-fit: cover; }
+        if root.tile.missing: Text {
+            width: 100%;
+            height: 100%;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            wrap: word-wrap;
+            text: root.tile.title;
+            color: root.theme.text;
+            font-size: 24 * root.theme.unit;
+        }
+        if root.focused: Rectangle {
+            border-radius: parent.border-radius;
+            border-width: 4 * root.theme.unit;
+            border-color: root.theme.accent;
+        }
+    }
+    @children
+}
+
+export component Layout {
+    in property <[LayoutTile]> tiles;
+    in property <int> focused;
+    in property <LayoutZone> zone;
+    in property <image> stage;
+    in property <LayoutHero> hero;
+    in property <bool> empty;
+    in property <LayoutEmptyWords> empty-words;
+    in property <[string]> tabs;
+    in property <int> tab;
+    in property <LayoutTheme> theme;
+    // Home's capsules under the tabs.
+    out property <length> actions-x: root.theme.canvas-margin;
+    out property <length> actions-y: root.theme.under-switcher + 48 * root.theme.unit;
+    // The focused cover, in the middle at rest.
+    out property <LayoutPlace> focused-place: {
+        x: root.middle,
+        y: (root.height - 360 * root.theme.unit) / 2,
+        width: 240 * root.theme.unit,
+        height: 360 * root.theme.unit,
+        radius: root.theme.radius-cover,
+    };
+    callback activated(int);
+    callback tab-tapped(int);
+
+    property <length> step: 280 * root.theme.unit;
+    property <length> middle: (root.width - 240 * root.theme.unit) / 2;
+    property <length> slide: -root.focused * root.step;
+    animate slide { duration: 220ms; easing: ease-in-out; }
+
+    Image {
+        width: 100%;
+        height: 100%;
+        source: root.stage;
+        image-fit: cover;
+        opacity: root.theme.opacity-dock-art;
+    }
+    HorizontalLayout {
+        x: root.theme.canvas-margin;
+        y: root.theme.under-switcher;
+        height: 40 * root.theme.unit;
+        spacing: 24 * root.theme.unit;
+        for name[i] in root.tabs: Text {
+            text: name;
+            color: i == root.tab ? root.theme.accent-label : root.theme.text-secondary;
+            font-size: 22 * root.theme.unit;
+        }
+    }
+    Image {
+        x: root.theme.canvas-margin;
+        y: (root.height - self.height) / 2;
+        width: 48 * root.theme.unit;
+        height: self.width;
+        source: @image-url("mark.svg");
+        colorize: root.theme.muted;
+    }
+    for tile[i] in root.tiles: Cover {
+        x: root.middle + root.slide + i * root.step;
+        y: (root.height - 360 * root.theme.unit) / 2;
+        tile: tile;
+        focused: i == root.focused && root.zone == LayoutZone.row;
+        theme: root.theme;
+        TouchArea {
+            clicked => {
+                root.activated(i);
+            }
+        }
+    }
+    if root.hero.shown: VerticalLayout {
+        x: 0;
+        width: root.width;
+        y: root.height / 2 + 210 * root.theme.unit;
+        spacing: 8 * root.theme.unit;
+        alignment: start;
+        Image {
+            height: 80 * root.theme.unit;
+            source: root.hero.logo;
+            image-fit: contain;
+        }
+        Text {
+            horizontal-alignment: center;
+            text: root.hero.title;
+            color: root.theme.text;
+            font-size: 32 * root.theme.unit;
+        }
+        Text {
+            horizontal-alignment: center;
+            text: root.hero.facts;
+            color: root.theme.muted;
+            font-size: 20 * root.theme.unit;
+        }
+    }
+    if root.empty: Rectangle {
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        width: 760 * root.theme.unit;
+        height: 236 * root.theme.unit;
+        border-radius: 26 * root.theme.unit;
+        background: @linear-gradient(100deg, root.theme.glass-panel-from 0%,
+            root.theme.glass-panel-to 100%);
+        border-width: 1px;
+        border-color: root.theme.white-20;
+        VerticalLayout {
+            padding: 40 * root.theme.unit;
+            spacing: 12 * root.theme.unit;
+            Text {
+                text: root.empty-words.title;
+                color: root.theme.text;
+                font-size: 36 * root.theme.unit;
+            }
+            Text {
+                text: root.empty-words.body;
+                color: root.theme.muted;
+                font-size: 22 * root.theme.unit;
+            }
+            Text {
+                text: root.empty-words.scan-again;
+                color: root.theme.accent-mid;
+                font-size: 22 * root.theme.unit;
+            }
+        }
+    }
+}

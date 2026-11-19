@@ -1,0 +1,202 @@
+// Kidō's Home layout contract, version 3. A layout's `layout.slint` exports `Layout`, whose root
+// has these properties and callback:
+//
+//     export component Layout {
+//         in property <[LayoutTile]> tiles;
+//         in property <int> focused;
+//         in property <LayoutZone> zone;
+//         in property <image> stage;
+//         in property <LayoutHero> hero;
+//         in property <bool> empty;
+//         in property <LayoutEmptyWords> empty-words;
+//         in property <[string]> tabs;
+//         in property <int> tab;
+//         in property <LayoutTheme> theme;
+//         out property <length> actions-x;
+//         out property <length> actions-y;
+//         out property <LayoutPlace> focused-place;
+//         callback activated(int);
+//         callback tab-tapped(int);
+//     }
+//
+// `stage` is the focused game's cover, its corners painted at a radius of 18 canvas px, at
+// 420 × 630 canvas px, or 357 × 536 and 462 × 693 at the Kartengröße Normal and Sehr groß: one
+// transparent pixel until it arrived. `empty` is true while the library has no game: the layout
+// draws a card with `empty-words` in place of its row. `tabs` are the names of the tabs over the row, which LT and
+// RT step, worded in the player's language, and `tab` the chosen one; none on a layout whose
+// manifest names no tabs.
+//
+// Home keeps the focus and the keys: it tells the layout which tile is focused and in which
+// zone, and the layout draws the focus itself. A tap calls `activated` with the tile's index,
+// and a tap on the empty card calls it with any index: Home then scans for stores again. A tap
+// on a tab calls `tab-tapped` with the tab's index, and Home chooses that tab. Only a
+// TouchArea's `clicked` calls either, and a layout calls no other callback. Home tells a screen
+// reader of the tiles, the empty card and the tabs itself.
+// Home draws its brand and page switcher over the top `under-switcher`, and its hints over the
+// bottom 100 units. On a layout whose manifest names `actions = "above"`, it draws the hero's
+// capsules where the layout's `actions-x` and `actions-y` say, from the layout's top left,
+// kept between the switcher and the hints: a row 8 + 72 × `text-scale` units tall, its
+// capsules 8 units under its top.
+// `focused-place` is where the focused tile stands at rest, from the layout's top left: Home's
+// launch splash opens out of it as the game starts, and closes into it.
+// On a layout whose manifest names `frame = "lanes"` or `frame = "rail"`, Home draws its page
+// lanes or its rail over the layout: the layout keeps its content between `theme.content-left`
+// and `theme.content-right`.
+
+// Home's Kartengröße, the player's pick of how large covers are.
+export enum LayoutCardSize { normal, large, very-large }
+
+// How long a title is, for its size where it is set over art.
+export enum LayoutTitleLength { short, medium, long }
+
+// A game of Home's row.
+export struct LayoutTile {
+    title: string,
+    // The store's short badge, such as STEAM.
+    badge: string,
+    // The game's art, once it arrived, its corners painted at a radius of 18 canvas px: on a
+    // layout whose manifest names `art = "cover"`, a 2:3 cover of 264 × 396; on one that names
+    // `art = "square"`, a near-square cover of 276 × 298, 326 × 352 or 392 × 424 at the
+    // Kartengröße Normal, Groß or Sehr groß.
+    art: image,
+    // The game runs now.
+    running: bool,
+    // The game has no art: the layout draws its title.
+    missing: bool,
+    // The art shows the game's name itself, so no title is set over it.
+    shows-title: bool,
+    title-length: LayoutTitleLength,
+    // A program's icon, for the cover Kidō makes where the program has no art; an image of no
+    // width for a game, and until the icon arrived.
+    icon: image,
+    // The program's colour, under its icon.
+    tint: color,
+}
+
+// A fact of the focused game: a symbol, in its color, and its words.
+export struct LayoutFact {
+    icon: image,
+    icon-color: color,
+    text: string,
+}
+
+// The focused game's texts, worded by Home in the player's language.
+export struct LayoutHero {
+    shown: bool,
+    kicker: string,
+    title: string,
+    // Its hours, its store and its install, on one line.
+    facts: string,
+    // Its facts one by one: its hours, its store, its install where it has one, and when it was
+    // last played. The parts' `Facts` draws them in a row.
+    fact-list: [LayoutFact],
+    // The first sentence of its store's description, or for a pick why it is there; empty where
+    // there is neither.
+    tagline: string,
+    // The game's logo, to show in place of its title; one transparent pixel until it arrived and
+    // where the game has none.
+    logo: image,
+    // The label of the games that follow the focused one in the row, such as „Als Nächstes“.
+    up-next: string,
+    // The label of the row of recently played games, such as „Zuletzt gespielt“.
+    recently-played: string,
+}
+
+// The card that stands for the row while the library has no game, worded by Home in the
+// player's language: its title, its line, and the label of A, which scans for stores again.
+export struct LayoutEmptyWords {
+    title: string,
+    body: string,
+    scan-again: string,
+}
+
+// Home's colors, units and lengths, for Home's color look. `unit` is 1px at 1920x1080, more on
+// a taller or larger screen; the other lengths are already scaled by it.
+export struct LayoutTheme {
+    text: color,
+    muted: color,
+    text-secondary: color,
+    // The accent of the focus and of lines.
+    accent: color,
+    // The accent of small labels and symbols.
+    accent-label: color,
+    // The accent between the two, for glows.
+    accent-mid: color,
+    // The alpha of a soft glow; 0 where the player turned glows off.
+    glow-alpha-soft: float,
+    // The outer band of the soft focus ring.
+    focus-halo-soft: color,
+    white-08: color,
+    white-20: color,
+    // The fill and the rim of the current tab.
+    segment-tint: brush,
+    segment-border: color,
+    // The dot of a game that runs now.
+    ok: color,
+    // The ground of a cover with no art, and the world symbol over it.
+    missing-art: brush,
+    world-symbol: image,
+    // The Library's symbol, on the card of an empty library. It and `world-symbol` are images of
+    // no width where the player turned symbols off.
+    library-symbol: image,
+    // Whether glass is clear; false under Weniger Transparenz, where glass is `glass-tint`
+    // with `glass-rim` a pixel outside its dark edge and `glass-highlight` along its top.
+    glass-clear: bool,
+    glass-tint: brush,
+    glass-rim: color,
+    glass-highlight: color,
+    // How a clear capsule's edge bends what lies beneath it: the depth of its band at most, its
+    // refraction per unit of that depth, its dispersion and its edge light.
+    glass-bezel: length,
+    glass-refraction: float,
+    glass-dispersion: float,
+    glass-edge-light: float,
+    // The tints of clear glass, from top left to bottom right: of a capsule and of a panel.
+    glass-capsule-from: color,
+    glass-capsule-to: color,
+    glass-panel-from: color,
+    glass-panel-to: color,
+    // The opacity of a tile Home dims, and of the art while a panel covers it.
+    opacity-dimmed-tile: float,
+    opacity-dock-art: float,
+    radius-cover: length,
+    // How far a focused cover moves: negative is up.
+    focus-lift-cover: length,
+    // How much larger a focused cover is drawn.
+    focus-grow-cover: float,
+    // The margin left and right of the screen's content.
+    canvas-margin: length,
+    // Where the screen's content starts from the left edge and ends from the right edge: the
+    // canvas margin, or past Home's page lanes or rail and that margin.
+    content-left: length,
+    content-right: length,
+    // The top of the content under Home's page switcher.
+    under-switcher: length,
+    unit: length,
+    // Home's Textgröße, as a factor of its type sizes under 44 units, a page title's.
+    text-scale: float,
+    // Home's Kartengröße.
+    cards: LayoutCardSize,
+    // How far Home lifts its hints on a television, inside the picture a television may cut;
+    // 0 on the handheld.
+    safe-lift: length,
+    // Home's page lanes' arcs, as shares of the screen's height: where they are widest, and the
+    // radii of their circles above and below that.
+    lane-crest: float,
+    lane-bend-top: float,
+    lane-bend: float,
+    reduced-motion: bool,
+}
+
+// Where a tile stands, from the layout's top left.
+export struct LayoutPlace {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    radius: length,
+}
+
+// Where Home's focus is: the row of games, the focused game's actions, the tabs over the row, or
+// elsewhere.
+export enum LayoutZone { row, actions, tabs, other }

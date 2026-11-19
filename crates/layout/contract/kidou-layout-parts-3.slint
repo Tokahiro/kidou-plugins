@@ -1,0 +1,617 @@
+// Kidō's parts a layout of contract 3 may import by this file's name, served by Home from memory
+// beside the contract: a cover with its shadow, the focus ring, glass, the hero's title and
+// facts, the empty library's card and a cover of a row. Each takes Home's theme as `theme`, as a layout reads none of Kidō's
+// globals. Motion follows Home's: the focus's 130 ms, at once while the player reduced motion.
+
+import {
+    LayoutEmptyWords, LayoutFact, LayoutTheme, LayoutTile,
+} from "kidou-layout-3.slint";
+import { Cover } from "kidou-layout-cover-3.slint";
+
+export { Cover }
+
+// A shadow alone, the shape blurred in its color with nothing painted over it, so that glass
+// above it shows it through. Slint casts a rectangle's drop shadow only from its own paint, as
+// faint as that paint is: the paint stands farther left than any window is wide, and casts its
+// shadow back by as much.
+component Shadow {
+    in property <length> radius;
+    in property <length> offset-y;
+    in property <length> blur;
+    in property <color> color;
+
+    property <length> away: 100000px;
+
+    Rectangle {
+        x: -root.away;
+        width: 100%;
+        height: 100%;
+        border-radius: root.radius;
+        background: black;
+        drop-shadow-offset-x: root.away;
+        drop-shadow-offset-y: root.offset-y;
+        drop-shadow-blur: root.blur;
+        drop-shadow-color: root.color;
+    }
+}
+
+// What it holds, shown or not: it fades over the focus's time, at once while motion is reduced.
+component Fade {
+    in property <bool> shown;
+    in property <bool> reduced;
+
+    property <float> eased: root.shown ? 1 : 0;
+
+    animate eased {
+        duration: 130ms;
+        easing: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    opacity: root.reduced ? (root.shown ? 1 : 0) : root.eased;
+    visible: self.opacity > 0;
+
+    @children
+}
+
+// A cover's shadow at rest, which fades out as the focus ring's own takes over. It lies under the
+// ring, which lies under the cover.
+export component CoverShadow {
+    in property <LayoutTheme> theme;
+    in property <length> radius: root.theme.radius-cover;
+    in property <bool> focused;
+
+    Fade {
+        width: 100%;
+        height: 100%;
+        shown: !root.focused;
+        reduced: root.theme.reduced-motion;
+
+        Shadow {
+            width: 100%;
+            height: 100%;
+            radius: root.radius;
+            offset-y: 12 * root.theme.unit;
+            blur: 30 * root.theme.unit;
+            color: #00000099;
+        }
+    }
+}
+
+export enum RingStyle {
+    // Around a capsule or a card: the accent's band, a halo outside it, a glow and a deep shadow.
+    capsule,
+    // Around a cover: the capsule's, with the accent's gradient as a ring over them.
+    cover,
+    // Around a list item or a tab: thinner bands and a smaller glow.
+    soft,
+}
+
+// Home's focus ring, laid around the element it fills and fading in as the focus comes. Place it
+// under the element, whose shadows it covers.
+export component Ring {
+    in property <LayoutTheme> theme;
+    in property <RingStyle> style;
+    in property <bool> shown;
+    // The element's corner radius.
+    in property <length> radius;
+
+    property <length> u: root.theme.unit;
+
+    Fade {
+        width: 100%;
+        height: 100%;
+        shown: root.shown;
+        reduced: root.theme.reduced-motion;
+
+        if root.style == RingStyle.soft: Rectangle {
+            width: 100%;
+            height: 100%;
+
+            Shadow {
+                x: -4 * root.u;
+                y: -4 * root.u;
+                width: parent.width + 8 * root.u;
+                height: parent.height + 8 * root.u;
+                radius: root.radius + 4 * root.u;
+                blur: 30 * root.u;
+                color: root.theme.accent.with-alpha(0.3);
+            }
+
+            Rectangle {
+                x: -4 * root.u;
+                y: -4 * root.u;
+                width: parent.width + 8 * root.u;
+                height: parent.height + 8 * root.u;
+                border-radius: root.radius + 4 * root.u;
+                border-width: 2 * root.u;
+                border-color: root.theme.focus-halo-soft;
+            }
+
+            Rectangle {
+                x: -2 * root.u;
+                y: -2 * root.u;
+                width: parent.width + 4 * root.u;
+                height: parent.height + 4 * root.u;
+                border-radius: root.radius + 2 * root.u;
+                border-width: 2 * root.u;
+                border-color: root.theme.accent;
+            }
+        }
+
+        if root.style != RingStyle.soft: Rectangle {
+            width: 100%;
+            height: 100%;
+
+            Shadow {
+                x: -8 * root.u;
+                y: -8 * root.u;
+                width: parent.width + 16 * root.u;
+                height: parent.height + 16 * root.u;
+                radius: root.radius + 8 * root.u;
+                blur: 48 * root.u;
+                color: root.theme.accent.with-alpha(0.35);
+            }
+
+            Shadow {
+                width: 100%;
+                height: 100%;
+                radius: root.radius;
+                offset-y: 26 * root.u;
+                blur: 50 * root.u;
+                color: #000000bf;
+            }
+
+            Rectangle {
+                x: -6 * root.u;
+                y: -6 * root.u;
+                width: parent.width + 12 * root.u;
+                height: parent.height + 12 * root.u;
+                border-radius: root.radius + 6 * root.u;
+                border-width: 3 * root.u;
+                border-color: root.theme.accent-label.with-alpha(0.5);
+            }
+
+            Rectangle {
+                x: -3 * root.u;
+                y: -3 * root.u;
+                width: parent.width + 6 * root.u;
+                height: parent.height + 6 * root.u;
+                border-radius: root.radius + 3 * root.u;
+                border-width: 3 * root.u;
+                border-color: root.theme.accent;
+            }
+
+            if root.style == RingStyle.cover: Rectangle {
+                x: -4 * root.u;
+                y: -4 * root.u;
+                width: parent.width + 8 * root.u;
+                height: parent.height + 8 * root.u;
+                border-radius: root.radius + 4 * root.u;
+                border-width: 3 * root.u;
+                border-color: @linear-gradient(135deg, root.theme.accent 0%,
+                    root.theme.accent-mid 50%, root.theme.accent-label 100%);
+            }
+        }
+    }
+}
+
+export enum GlassKind { panel, capsule }
+
+// Home's glass: where glass is clear, its gradient under one still rim lit from the top left, a
+// capsule's edge bending what lies beneath it as thick glass does; else Home's tint, as under
+// Weniger Transparenz. Set its `border-radius`; what it holds lies over the rim.
+export component Glass inherits Rectangle {
+    in property <LayoutTheme> theme;
+    in property <GlassKind> kind: GlassKind.panel;
+
+    property <bool> clear: root.theme.glass-clear;
+    property <length> bezel: min(root.theme.glass-bezel, root.width / 2, root.height / 2);
+    // The radius of the shape inside the tint's dark edge, as the corners are drawn.
+    property <length> outer-radius: min(root.border-radius, root.width / 2, root.height / 2);
+    property <length> inner-radius: root.outer-radius - 1px;
+
+    if root.clear && root.kind == GlassKind.capsule: Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: root.border-radius;
+        backdrop-bezel: root.bezel;
+        backdrop-refraction: root.bezel * root.theme.glass-refraction;
+        backdrop-dispersion: root.theme.glass-dispersion;
+        backdrop-edge-light: root.theme.glass-edge-light;
+    }
+
+    if root.clear: Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: root.border-radius;
+        background: root.kind == GlassKind.capsule ? @linear-gradient(100deg,
+            root.theme.glass-capsule-from 0%, root.theme.glass-capsule-to 100%)
+            : @linear-gradient(100deg, root.theme.glass-panel-from 0%,
+            root.theme.glass-panel-to 100%);
+    }
+
+    if root.clear: Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: root.border-radius;
+        border-width: 1.5 * root.theme.unit;
+        border-color: @linear-gradient(135deg, #ffffffd9 0%, #ffffff2e 28%, #ffffff0d 60%,
+            #ffffff38 100%);
+    }
+
+    // The tint, with its dark edge.
+    if !root.clear: Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: root.border-radius;
+        background: root.theme.glass-tint;
+        border-width: 1px;
+        border-color: #00000099;
+    }
+
+    // The rim, a pixel outside the edge.
+    if !root.clear: Rectangle {
+        x: -1px;
+        y: -1px;
+        width: parent.width + 2px;
+        height: parent.height + 2px;
+        border-radius: root.border-radius + 1px;
+        border-width: 1px;
+        border-color: root.theme.glass-rim;
+    }
+
+    // The faint line inside the dark one.
+    if !root.clear: Rectangle {
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: parent.height - 2px;
+        border-radius: max(0, root.border-radius - 1px);
+        border-width: 1px;
+        border-color: #ffffff0a;
+    }
+
+    // The light caught inside the top edge, thinning down each corner to nothing where the side
+    // begins: the outline of a shape with the inner corners, its top half kept.
+    // Both are there and shown by `visible`, not made by `if`, which would read the size on every
+    // update and keep a size in motion animating.
+    if !root.clear: Rectangle {
+        visible: root.inner-radius > 1px;
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: root.inner-radius;
+        clip: true;
+
+        Rectangle {
+            y: 0px;
+            height: 2 * root.inner-radius;
+            border-radius: root.inner-radius;
+            border-width: 1px;
+            border-color: @linear-gradient(180deg, root.theme.glass-highlight 0%,
+                root.theme.glass-highlight.with-alpha(0) 50%);
+        }
+    }
+    if !root.clear: Rectangle {
+        visible: root.inner-radius <= 1px;
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: 1px;
+        background: root.theme.glass-highlight;
+    }
+}
+
+// The focused game's facts in a row, 26 apart: each its symbol in its color and its words.
+export component Facts inherits HorizontalLayout {
+    in property <LayoutTheme> theme;
+    in property <[LayoutFact]> facts;
+
+    spacing: 26 * root.theme.unit;
+    alignment: start;
+
+    for fact in root.facts: HorizontalLayout {
+        spacing: 9 * root.theme.unit;
+
+        VerticalLayout {
+            alignment: center;
+
+            Image {
+                width: 22 * root.theme.unit;
+                height: 22 * root.theme.unit;
+                source: fact.icon;
+                colorize: fact.icon-color;
+                accessible-role: none;
+            }
+        }
+
+        Text {
+            text: fact.text;
+            font-size: 23 * root.theme.unit * root.theme.text-scale;
+            color: root.theme.text-secondary;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// The focused game's title in the hero title's type, within the height `room` the layout leaves
+// it: a title that does not fit at `size` steps down to five sixths and then two thirds of it,
+// and one that still does not fit ends in „…“ on the last line that fits. Where the game's logo
+// arrived, the logo stands in its place, in a box of 560 × 200 that `room` caps.
+export component HeroTitle {
+    in property <LayoutTheme> theme;
+    in property <string> text;
+    in property <length> room;
+    in property <length> size: 96 * root.theme.unit;
+    in property <image> logo;
+
+    property <bool> shows-logo: root.logo.width > 1;
+    property <length> logo-height: max(200 * root.theme.unit / 3,
+        min(root.room, 200 * root.theme.unit));
+    property <length> step: large.preferred-height <= root.room ? root.size
+        : middle.preferred-height <= root.room ? root.size * 5 / 6
+        : root.size * 2 / 3;
+    // The lines that fit at the smallest step; 0 lets every line show.
+    property <int> lines: small.preferred-height <= root.room ? 0
+        : max(1, floor(root.room / line.preferred-height));
+    property <length> shown: root.shows-logo ? root.logo-height : title.preferred-height;
+
+    min-height: root.shown;
+    preferred-height: root.shown;
+    max-height: root.shown;
+
+    // The probes, read only for their height at the title's width: a frame of no size holds them,
+    // so that their heights are their text's.
+    Rectangle {
+        width: 0;
+        height: 0;
+        visible: false;
+
+        large := Text {
+            width: root.width;
+            text: root.text;
+            font-size: root.size;
+            font-weight: 700;
+            letter-spacing: self.font-size * -0.03;
+            line-height-factor: 0.98;
+            wrap: word-wrap;
+            accessible-role: none;
+        }
+
+        middle := Text {
+            width: root.width;
+            text: root.text;
+            font-size: root.size * 5 / 6;
+            font-weight: 700;
+            letter-spacing: self.font-size * -0.03;
+            line-height-factor: 0.98;
+            wrap: word-wrap;
+            accessible-role: none;
+        }
+
+        small := Text {
+            width: root.width;
+            text: root.text;
+            font-size: root.size * 2 / 3;
+            font-weight: 700;
+            letter-spacing: self.font-size * -0.03;
+            line-height-factor: 0.98;
+            wrap: word-wrap;
+            accessible-role: none;
+        }
+
+        line := Text {
+            width: root.width;
+            text: "X";
+            font-size: root.size * 2 / 3;
+            font-weight: 700;
+            letter-spacing: self.font-size * -0.03;
+            line-height-factor: 0.98;
+            wrap: word-wrap;
+            accessible-role: none;
+        }
+    }
+
+    if root.shows-logo: Image {
+        x: 0;
+        y: 0;
+        width: min(root.width, 560 * root.theme.unit);
+        height: root.logo-height;
+        source: root.logo;
+        image-fit: contain;
+        horizontal-alignment: left;
+        vertical-alignment: bottom;
+        accessible-role: image;
+        accessible-label: root.text;
+    }
+
+    title := Text {
+        x: 0;
+        y: 0;
+        width: root.width;
+        visible: !root.shows-logo;
+        text: root.text;
+        font-size: root.step;
+        font-weight: 700;
+        letter-spacing: self.font-size * -0.03;
+        line-height-factor: 0.98;
+        wrap: word-wrap;
+        max-lines: root.lines;
+        // A renderer that measures a line taller than `line-height-factor` makes it would cut a
+        // whole title short too.
+        overflow: root.lines > 0 ? TextOverflow.elide : TextOverflow.clip;
+        color: root.theme.text;
+    }
+}
+
+// The card that stands for the row while the library has no game, with A's label: A scans for
+// stores again. A layout lays a TouchArea in it that calls `activated`.
+export component EmptyCard {
+    in property <LayoutTheme> theme;
+    in property <LayoutEmptyWords> words;
+    in property <bool> focused;
+
+    property <length> u: root.theme.unit;
+    // A unit of type, which grows with Home's Textgröße.
+    property <length> t: root.u * root.theme.text-scale;
+
+    width: 760 * root.u;
+    height: max(236 * root.u, card.preferred-height);
+    transform-scale: root.focused && !root.theme.reduced-motion ? 1.03 : 1;
+
+    animate transform-scale {
+        duration: 130ms;
+        easing: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    Ring {
+        width: 100%;
+        height: 100%;
+        theme: root.theme;
+        style: RingStyle.capsule;
+        shown: root.focused;
+        radius: 26 * root.u;
+    }
+
+    Glass {
+        theme: root.theme;
+        border-radius: 26 * root.u;
+    }
+
+    card := VerticalLayout {
+        padding-top: 34 * root.u;
+        padding-bottom: 34 * root.u;
+        padding-left: 40 * root.u;
+        padding-right: 40 * root.u;
+        spacing: 12 * root.u;
+
+        // The Library's symbol before the title: no game in it yet.
+        HorizontalLayout {
+            spacing: 16 * root.u;
+            alignment: start;
+
+            if root.theme.library-symbol.width > 0: VerticalLayout {
+                alignment: center;
+
+                Image {
+                    width: 40 * root.u;
+                    height: 40 * root.u;
+                    source: root.theme.library-symbol;
+                    colorize: root.theme.accent-label;
+                    accessible-role: none;
+                }
+            }
+
+            Text {
+                text: root.words.title;
+                font-size: 36 * root.t;
+                font-weight: 600;
+                color: root.theme.text;
+                vertical-alignment: center;
+            }
+        }
+
+        Text {
+            text: root.words.body;
+            font-size: 22 * root.t;
+            line-height-factor: 1.45;
+            wrap: word-wrap;
+            color: root.theme.muted;
+        }
+
+        Rectangle { }
+
+        HorizontalLayout {
+            spacing: 12 * root.u;
+            alignment: start;
+
+            Rectangle {
+                width: 34 * root.t;
+                height: 34 * root.t;
+                border-radius: self.width / 2;
+                background: root.theme.text;
+
+                Text {
+                    text: "A";
+                    font-size: 17 * root.t;
+                    font-weight: 700;
+                    color: #000000;
+                    accessible-role: none;
+                }
+            }
+
+            Text {
+                text: root.words.scan-again;
+                font-size: 22 * root.t;
+                color: root.theme.text;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    @children
+}
+
+// A cover of a row, its size the element's: the cover with its rest shadow; focused, it lifts by
+// `focus-lift-cover`, grows by `focus-grow-cover` and takes the cover ring. A layout places it and lays a
+// TouchArea in it.
+export component RowCover {
+    in property <LayoutTheme> theme;
+    in property <LayoutTile> tile;
+    in property <bool> focused;
+    // The badge shows on the selected cover alone.
+    in property <bool> selected;
+
+    property <length> lift: root.focused && !root.theme.reduced-motion
+        ? root.theme.focus-lift-cover : 0;
+    property <length> radius: root.theme.radius-cover;
+
+    animate lift {
+        duration: 130ms;
+        easing: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    // The rest shadow, at the cover's resting place: it fades as the focus comes.
+    CoverShadow {
+        theme: root.theme;
+        radius: root.radius;
+        focused: root.focused;
+    }
+
+    Rectangle {
+        y: root.lift;
+        transform-scale: root.focused && !root.theme.reduced-motion ? root.theme.focus-grow-cover : 1;
+
+        animate transform-scale {
+            duration: 130ms;
+            easing: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        Ring {
+            width: 100%;
+            height: 100%;
+            theme: root.theme;
+            style: RingStyle.cover;
+            shown: root.focused;
+            radius: root.radius;
+        }
+
+        Cover {
+            theme: root.theme;
+            art: root.tile.art;
+            missing: root.tile.missing;
+            shows-title: root.tile.shows-title;
+            title-length: root.tile.title-length;
+            icon: root.tile.icon;
+            tint: root.tile.tint;
+            title: root.tile.title;
+            badge: root.selected ? root.tile.badge : "";
+            running: root.tile.running;
+            gloss: !root.focused;
+            radius: root.radius;
+        }
+    }
+
+    @children
+}

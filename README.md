@@ -152,7 +152,7 @@ my-layout/
 ```
 
 The five layouts in [`layouts/`](layouts) are the reference; start from the one closest to what you want.
-The contract's own files are part of Kidō, which isn't public yet, so this section sums them up.
+The contract's own files are in [`crates/layout/contract/`](crates/layout/contract); this section sums them up.
 
 ### What Kidō Does, and What the Layout Does
 
@@ -231,7 +231,8 @@ To change a layout:
 3. Open a pull request.
 
 CI checks that the list, the packages and the sources fit each other, and that the source packs.
-It doesn't run Kidō's own check of the manifest and the layout, so install your change with `kidouplug` before you open the pull request.
+It also runs the check Kidō runs on a Home layout at the install, from [`crates/layout/`](crates/layout), which is the code Kidō itself builds.
+Kidō's check of the manifest isn't part of it, so install a new plugin with `kidouplug` once before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 
