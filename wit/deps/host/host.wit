@@ -1,6 +1,7 @@
 // What every code plugin imports from Kidō. Paths are strings, an `at` is a time in seconds
-// since 1970-01-01 00:00 UTC, and a day a local calendar day counted from 1970-01-01. On Windows a drive path is `/C/Games/X` in
-// both directions, as WASI reads it, and so is a registry text value that starts with one.
+// since 1970-01-01 00:00 UTC, and a day a local calendar day counted from 1970-01-01. On
+// Windows a drive path is `/C/Games/X` in both directions, as WASI reads it, and so is a
+// registry text value that starts with one.
 package kidou:host@1.0.0;
 
 /// The registry keys and folders the plugin's grants allow, and Windows' answers.

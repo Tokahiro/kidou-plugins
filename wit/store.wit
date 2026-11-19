@@ -96,17 +96,17 @@ interface types {
 
     record start { %variant: option<string>, arguments: string }
     record program { program: string, arguments: string, directory: string, within: string }
-    /// `LaunchPlan`.
+    /// How Kidō starts a game: a link it opens, or a program it runs.
     variant launch { uri(string), program(program) }
     variant plan-error { store-not-found, no-game(string), unreadable(string) }
 
     variant visit { install(string), show(string), uninstall(string), store-page(string) }
 
-    /// `RunningHint`.
+    /// What the store says is running.
     record hint { app: option<string>, client-pid: option<u32> }
 }
 
-/// `StoreRuntime` and its `StoreReader`.
+/// What a store plugin exports.
 interface runtime {
     use types.{detection, scanned, scan-depth, start, launch, plan-error, visit, hint};
 

@@ -1,6 +1,6 @@
-// An events plugin, on the host's imports of `kidou:host` (../deps/host). Kidō calls it only at the events its
-// manifest names, and on a press of one of its quick-menu tiles; its settings rows and tiles are
-// data in its manifest, which Kidō draws.
+// An events plugin, on the host's imports of `kidou:host` (../deps/host). Kidō calls it only at
+// the events its manifest names, and on a press of one of its quick-menu tiles; its settings
+// rows and tiles are data in its manifest, which Kidō draws.
 package kidou:events@1.0.0;
 
 interface types {
