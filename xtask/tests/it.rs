@@ -210,16 +210,21 @@ fn check_names_what_differs() {
 #[test]
 fn the_lists_api_is_held_to_the_packages_manifest() {
     let api = "api = \"3.1.0\"\n";
-    for (name, listed) in [("api-differs", "api = \"3.0.0\"\n"), ("api-gone", "")] {
+    let names = "which the manifest in packages/lamp-1.0.0.kidouplug names";
+    let gone = "lamp: no `api`; the manifest in packages/lamp-1.0.0.kidouplug names 3.1.0";
+    for (name, listed, wrong) in [
+        (
+            "api-differs",
+            "api = \"3.0.0\"\n",
+            format!("lamp: `api` is not 3.1.0, {names}"),
+        ),
+        ("api-gone", "", gone.to_owned()),
+    ] {
         let root = packed(name);
         let list = fs::read_to_string(root.join("index.toml")).expect("the list");
         assert!(list.contains(api), "{list}");
         fs::write(root.join("index.toml"), list.replace(api, listed)).expect("the list");
-        assert_eq!(
-            check(&root).expect("a check"),
-            ["lamp: `api` is not 3.1.0, which the manifest in packages/lamp-1.0.0.kidouplug names"],
-            "{name}"
-        );
+        assert_eq!(check(&root).expect("a check"), [wrong], "{name}");
     }
 }
 
@@ -361,21 +366,25 @@ fn a_manifest_that_does_not_fit_its_folder_is_refused() {
             "no `layout` plugin",
         ),
         (
-            "id = \"lamp\"\nversion = \"1.0\"\ncategory = \"layout\"\n",
+            "id = \"lamp\"\nversion = \"1.0\"\ncategory = \"layout\"\napi = \"3.1.0\"\n",
             "`1.0` is not three numbers",
         ),
         (
-            "id = \"lamp\"\nversion = \"+1.0.0\"\ncategory = \"layout\"\n",
+            "id = \"lamp\"\nversion = \"+1.0.0\"\ncategory = \"layout\"\napi = \"3.1.0\"\n",
             "`+1.0.0` is not three numbers",
         ),
         (
-            "id = \"lamp\"\nversion = \"01.0.0\"\ncategory = \"layout\"\n",
+            "id = \"lamp\"\nversion = \"01.0.0\"\ncategory = \"layout\"\napi = \"3.1.0\"\n",
             "`01.0.0` is not three numbers",
         ),
         ("id = \"lamp\"\ncategory = \"layout\"\n", "no `version`"),
         (
             "id = \"lamp\"\nversion = \"1.0.0\"\ncategory = \"layout\"\n",
             "no `api`",
+        ),
+        (
+            "id = \"lamp\"\nversion = \"1.0.0\"\ncategory = \"layout\"\napi = \"3.1\"\n",
+            "`3.1` is not three numbers",
         ),
     ];
     for (at, (manifest, why)) in cases.into_iter().enumerate() {

@@ -163,7 +163,7 @@ impl Source {
 
 /// Each plugin with its source under `root`, by category and id; refuses a manifest whose id is
 /// not its folder's name, none Kidō's list takes or that of a plugin of another category, whose
-/// category is not its folder's, or whose version is not three numbers.
+/// category is not its folder's, or whose version or `api` is not three numbers.
 pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
     let mut found = Vec::new();
     for (category, folder, brings) in SOURCES {
@@ -208,17 +208,17 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
             if found.iter().any(|other: &Source| other.id == id) {
                 return Err(format!("{}: a second plugin `{id}`", at.display()));
             }
-            if numbers(&version).is_none() {
-                return Err(format!(
-                    "{}: `{version}` is not three numbers",
-                    at.display()
-                ));
+            let api = word("api")?;
+            for word in [&version, &api] {
+                if numbers(word).is_none() {
+                    return Err(format!("{}: `{word}` is not three numbers", at.display()));
+                }
             }
             found.push(Source {
                 folder,
                 id,
                 version,
-                api: word("api")?,
+                api,
                 category,
                 brings,
                 root: root.to_owned(),
@@ -348,6 +348,9 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
             Ok(bytes) if Some(sha256(&bytes).as_str()) == word("sha256") => {
                 match built_for(&bytes) {
                     Some(api) if Some(api.as_str()) == word("api") => {}
+                    Some(api) if word("api").is_none() => wrong.push(format!(
+                        "{id}: no `api`; the manifest in packages/{file} names {api}"
+                    )),
                     Some(api) => wrong.push(format!(
                         "{id}: `api` is not {api}, which the manifest in packages/{file} names"
                     )),
