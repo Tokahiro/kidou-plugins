@@ -325,7 +325,7 @@ pub fn layouts(root: &Path) -> Result<Vec<String>, String> {
             continue;
         }
         let id = &source.id;
-        let read = Files::read(&source.folder.join(kidou_layout::FOLDER)).and_then(|mut files| {
+        let read = Files::read(&source.folder.join(source.brings)).and_then(|mut files| {
             files.draw(|_, svg| kidou_layout::draw_svg(svg).map_err(str::to_owned))?;
             Ok(files)
         });

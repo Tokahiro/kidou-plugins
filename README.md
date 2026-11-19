@@ -232,7 +232,7 @@ To change a layout:
 
 CI checks that the list, the packages and the sources fit each other, and that the source packs.
 It also runs the check Kidō runs on a Home layout at the install, from [`crates/layout/`](crates/layout), which is the code Kidō itself builds.
-Kidō's check of the manifest isn't part of it, so install a new plugin with `kidouplug` once before you open the pull request.
+Kidō's check of the manifest isn't part of it, nor the time and memory limits Kidō sets for drawing an SVG, so install a new plugin with `kidouplug` once before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 

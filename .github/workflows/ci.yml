@@ -36,6 +36,7 @@ jobs:
       # Slint's compiler, which the layout check builds, takes minutes without it.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
+          shared-key: slint
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo test --locked
       - run: cargo xtask check
@@ -62,6 +63,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends libfontconfig-dev pkgconf
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
+          shared-key: slint
           save-if: false
       - id: pack
         name: Pack new versions
