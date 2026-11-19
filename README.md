@@ -27,7 +27,7 @@ Three rules hold for every plugin:
 
 - **One category.** A plugin is in exactly one category, and each category has its own interface and rules. A plugin that wants two things ships as two plugins.
 - **Kidō stays in charge.** Kidō decides when a plugin runs, keeps the focus and the gamepad, and draws everything but a layout itself. No plugin can slow Home's start.
-- **Nothing hidden.** A plugin with code runs in a sandbox and reaches only what its manifest asks for. You see each grant, with its reason, before the install.
+- **Nothing hidden.** A plugin with code runs in a sandbox and reaches only what its manifest asks for. You see what a plugin may reach before the install.
 
 ## Official Plugins
 
@@ -118,7 +118,7 @@ Rules every category keeps:
 - No plugin draws its own window but a `layout`. A plugin gives data, and Kidō draws it with its own focus and gamepad rules.
 - A `device` plugin reads its maker's software and opens it. It writes nothing.
 - Only a `source` plugin asks hosts over the network, and only the `https` hosts it names.
-- Every grant has a reason for the player, in English and, where given, in German, each at most 80 characters.
+- A grant can carry a reason for the player, in English and German, each at most 80 characters. A plugin on Kidō's list needs a clear one.
 
 ### The Manifest
 
@@ -135,7 +135,7 @@ api = "3.0.0"            # the version of the category's interface it's built fo
 ```
 
 A plugin built for `api = "3.0.0"` runs on every Kidō whose interface for that category is 3.0.0 or a later 3.x.
-Kidō refuses a plugin built for another first number, a manifest with a key its category doesn't have, and a grant its category may not ask for.
+Kidō refuses a plugin built for another first number or for a later version than its own, a manifest with a key its category doesn't have, and a grant its category may not ask for.
 The refusal names the rule.
 
 ## Write a Home Layout
@@ -193,12 +193,13 @@ Ready parts come with the contract, among them `Cover`, `RowCover`, `HeroTitle`,
 
 Kidō checks a layout before it installs it, and again after each update of Kidō.
 A layout that breaks a rule isn't installed, and the refusal names each rule.
+The main ones:
 
 - No `FocusScope`, `TextInput`, `PopupWindow`, `Dialog`, `Timer`, menu or gesture-handler element, and no `changed` handler.
 - It calls only `activated` and `tab-tapped`, and only in a `TouchArea`'s `clicked`.
-- Each animation ends: at most 3 seconds and 10 iterations, both written as numbers.
+- Each animation ends: at most 3 seconds and 10 iterations, both written as numbers. No call that isn't pure, such as `animation-tick()`.
 - No `for` over a number and no `for` inside a `for`.
-- Images are files of the layout, at most 4096 px a side. No fonts: a layout uses Kidō's.
+- Images are PNG, JPEG or SVG files of the layout, at most 4096 px a side, given to properties and never inside a `for`. No fonts: a layout uses Kidō's.
 - At most 256 files, 8 MiB each and 32 MiB together, with names of `A-Z a-z 0-9 . _ -`.
 
 ### Pack and Try It
@@ -229,11 +230,12 @@ To change a layout:
 2. Raise `version` in its `plugin.toml`. Leave `index.toml` and `packages/` alone.
 3. Open a pull request.
 
-CI checks that the list, the packages and the sources fit each other.
+CI checks that the list, the packages and the sources fit each other, and that the source packs.
+It doesn't run Kidō's own check of the manifest and the layout, so install your change with `kidouplug` before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 
-A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about`.
+A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `package` and `sha256`.
 
 Run the same check yourself with a Rust toolchain:
 

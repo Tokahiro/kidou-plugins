@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use xtask::{PACKAGES, check, pack_new, sha256, sources};
+use xtask::{MAX_ENTRIES, PACKAGES, check, pack_new, sha256, sources};
 
 const LIST: &str = r#"# The list.
 
@@ -12,10 +12,7 @@ const LIST: &str = r#"# The list.
 id = "lamp"
 name = "Lampe"
 category = "layout"
-version = "0.0.0"
 about = "Home layout: a lamp"
-package = ""
-sha256 = ""
 
 [[pack]]
 id = "all"
@@ -100,7 +97,7 @@ fn a_package_holds_the_manifest_and_then_the_layout_each_folder_before_its_files
 #[test]
 fn check_names_what_differs() {
     type Change = fn(&Path);
-    let cases: [(&str, Change, &str); 6] = [
+    let cases: Vec<(&str, Change, &str)> = vec![
         (
             "source-changed",
             |root| fs::write(root.join("layouts/lamp/layout/layout.slint"), "// Lit.\n").unwrap(),
@@ -144,16 +141,60 @@ fn check_names_what_differs() {
             },
             "lamp: the list names 1.0.0, the source 1.1.0",
         ),
+        (
+            "version-earlier",
+            |root| fs::write(root.join("layouts/lamp/plugin.toml"), manifest("0.9.0")).unwrap(),
+            "lamp: the new version 0.9.0 is not later than the listed 1.0.0",
+        ),
+        (
+            "device-name",
+            |root| {
+                fs::write(root.join("layouts/lamp/plugin.toml"), manifest("1.1.0")).unwrap();
+                fs::write(root.join("layouts/lamp/layout/aux.svg"), "<svg/>").unwrap();
+            },
+            "\"aux.svg\" is no name a package may hold",
+        ),
+        (
+            "too-many-files",
+            |root| {
+                fs::write(root.join("layouts/lamp/plugin.toml"), manifest("1.1.0")).unwrap();
+                for at in 0..MAX_ENTRIES {
+                    fs::write(root.join(format!("layouts/lamp/layout/{at}.svg")), "").unwrap();
+                }
+            },
+            "a package holds at most 256 files and folders",
+        ),
+        (
+            "listed-without-source",
+            |root| {
+                let list = fs::read_to_string(root.join("index.toml")).unwrap();
+                let list = format!("{list}\n[[plugin]]\nid = \"moth\"\ncategory = \"store\"\n");
+                fs::write(root.join("index.toml"), list).unwrap();
+            },
+            "moth: no `version`, and no source to pack",
+        ),
+        #[cfg(unix)]
+        (
+            "layout-is-a-link",
+            |root| {
+                fs::write(root.join("layouts/lamp/plugin.toml"), manifest("1.1.0")).unwrap();
+                fs::remove_dir_all(root.join("layouts/lamp/layout")).unwrap();
+                std::os::unix::fs::symlink(root.join("packages"), root.join("layouts/lamp/layout"))
+                    .unwrap();
+            },
+            "layout: no folder",
+        ),
     ];
     for (name, change, line) in cases {
         let root = packed(name);
         change(&root);
         let wrong = check(&root).expect("a check");
         assert!(
-            wrong.first().is_some_and(|first| first.starts_with(line)),
+            wrong.iter().any(|wrong| wrong.contains(line)),
             "{name}: {wrong:?}"
         );
     }
+    assert_eq!(check(&packed("nothing")).expect("a check"), [""; 0]);
 }
 
 #[test]
@@ -177,6 +218,14 @@ fn a_manifest_that_does_not_fit_its_folder_is_refused() {
         (
             "id = \"lamp\"\nversion = \"1.0\"\ncategory = \"layout\"\n",
             "`1.0` is not three numbers",
+        ),
+        (
+            "id = \"lamp\"\nversion = \"+1.0.0\"\ncategory = \"layout\"\n",
+            "`+1.0.0` is not three numbers",
+        ),
+        (
+            "id = \"lamp\"\nversion = \"01.0.0\"\ncategory = \"layout\"\n",
+            "`01.0.0` is not three numbers",
         ),
         ("id = \"lamp\"\ncategory = \"layout\"\n", "no `version`"),
     ];

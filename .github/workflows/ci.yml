@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       # Kidō holds a package to the SHA-256 it was listed with, so a listed file stays as it is.
       - name: No listed package changes
@@ -30,7 +31,8 @@ jobs:
       - run: cargo test --locked
       - run: cargo xtask check
 
-  # Packs each plugin whose source has a new version, and lists the package.
+  # Packs each plugin whose source has a new version, and lists the package. It packs main as it
+  # is now, one run at a time, so a run that waited packs what the runs before it left.
   pack:
     if: github.event_name == 'push'
     needs: check
@@ -41,14 +43,24 @@ jobs:
     concurrency: pack
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Pack new versions
+        with:
+          ref: main
+          persist-credentials: false
+      - id: pack
+        name: Pack new versions
         run: |
+          cargo xtask check
           packed=$(cargo xtask pack)
-          if [ -z "$packed" ]; then
-            exit 0
-          fi
+          echo "packed=$(printf '%s' "$packed" | paste -sd, - | sed 's/,/, /g')" >> "$GITHUB_OUTPUT"
+      # The token is given to this step alone: the step above runs cargo's build scripts.
+      - name: List them
+        if: steps.pack.outputs.packed != ''
+        env:
+          PACKED: ${{ steps.pack.outputs.packed }}
+          TOKEN: ${{ github.token }}
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.toml packages
-          git commit -m "Pack $(printf '%s' "$packed" | paste -sd, - | sed 's/,/, /g')"
-          git push
+          git commit -m "Pack $PACKED"
+          git push "https://x-access-token:$TOKEN@github.com/$GITHUB_REPOSITORY" HEAD:main
