@@ -166,17 +166,17 @@ fn call_rules(name: &str, component: &Rc<Component>, roots: &[ElementRc], why: &
             && owners.insert(Rc::as_ptr(&owner))
         {
             let init = owner.init_code.borrow();
-            for code in init
+            for entry in init
                 .constructor_code
                 .iter()
-                .chain(init.inlined_init_code.values())
+                .chain(init.inlined_init_code.values().flatten())
             {
-                refuse(code, false);
+                refuse(&entry.code, false);
             }
         }
     };
-    for element in component.optimized_elements.borrow().iter() {
-        visit(element);
+    for optimized in component.optimized_elements.borrow().iter() {
+        visit(&optimized.element);
     }
     object_tree::recurse_elem_including_sub_components(component, &(), &mut |element, ()| {
         visit(element);
@@ -319,8 +319,8 @@ fn image_rules(
         own |= shows;
     };
     let mut inner = Vec::new();
-    for element in component.optimized_elements.borrow().iter() {
-        count(element);
+    for optimized in component.optimized_elements.borrow().iter() {
+        count(&optimized.element);
     }
     object_tree::recurse_elem(&component.root_element, &(), &mut |element, ()| {
         count(element);

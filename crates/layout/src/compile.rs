@@ -121,7 +121,7 @@ pub fn compile(files: &Files) -> Result<ComponentDefinition, Vec<String>> {
         i_slint_core::InternalToken,
     );
     let result = block_on(compiler.build_from_source_path(
-        WRAPPER.1.to_owned(),
+        Some(WRAPPER.1.to_owned()),
         source::address(WRAPPER.0),
         i_slint_core::InternalToken,
     ));
