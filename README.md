@@ -202,9 +202,10 @@ While `theme.reduced-motion` is true, a layout starts no animation: what would m
 Give the value its own animated property, and read that property only in full motion:
 
 ```slint
-property <length> lifted: self.focused ? -self.theme.focus-lift-cover : 0;
+property <length> lifted: self.focused ? self.theme.focus-lift-cover : 0;
 property <length> lift: self.theme.reduced-motion ? 0 : self.lifted;
 animate lifted { duration: 130ms; easing: ease-out; }
+y: self.rest-y + self.lift;
 ```
 
 A test on `reduced-motion` inside the animated value isn't enough.
