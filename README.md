@@ -194,6 +194,24 @@ It gives these back:
 Ready parts come with the contract, among them `Cover`, `RowCover`, `HeroTitle`, `Kicker`, `Facts`, `EmptyCard`, `Shoulder`, `Glass` and `Ring`.
 `Kicker` and `Shoulder` came with contract 3.1.0: a layout that uses them says `api = "3.1.0"`.
 
+### Reduced Motion
+
+A player can turn motion down in Kidō's settings, and a layout must keep to that.
+While `theme.reduced-motion` is true, a layout starts no animation: what would move changes at once.
+
+Give the value its own animated property, and read that property only in full motion:
+
+```slint
+property <length> lifted: self.focused ? -self.theme.focus-lift-cover : 0;
+property <length> lift: self.theme.reduced-motion ? 0 : self.lifted;
+animate lifted { duration: 130ms; easing: ease-out; }
+```
+
+A test on `reduced-motion` inside the animated value isn't enough.
+Slint still starts the animation when the focus moves, from 0 to 0, with nothing to see on screen.
+Kidō's check can't find this, so look for it yourself in each `animate`.
+The contract's parts, such as `RowCover` and `Ring`, keep the rule on their own.
+
 ### What Kidō Refuses
 
 Kidō checks a layout before it installs it, and again after each update of Kidō.

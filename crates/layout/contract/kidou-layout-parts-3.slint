@@ -488,9 +488,11 @@ export component EmptyCard {
 
     width: 760 * root.u;
     height: max(236 * root.u, card.preferred-height);
-    transform-scale: root.focused && !root.theme.reduced-motion ? 1.03 : 1;
+    property <float> grown: root.focused ? 1.03 : 1;
 
-    animate transform-scale {
+    transform-scale: root.theme.reduced-motion ? 1 : root.grown;
+
+    animate grown {
         duration: 130ms;
         easing: cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -593,11 +595,12 @@ export component RowCover {
     // The badge shows on the selected cover alone.
     in property <bool> selected;
 
-    property <length> lift: root.focused && !root.theme.reduced-motion
-        ? root.theme.focus-lift-cover : 0;
+    property <length> lifted: root.focused ? root.theme.focus-lift-cover : 0;
+    property <length> lift: root.theme.reduced-motion ? 0 : root.lifted;
+    property <float> grown: root.focused ? root.theme.focus-grow-cover : 1;
     property <length> radius: root.theme.radius-cover;
 
-    animate lift {
+    animate lifted, grown {
         duration: 130ms;
         easing: cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -611,12 +614,7 @@ export component RowCover {
 
     Rectangle {
         y: root.lift;
-        transform-scale: root.focused && !root.theme.reduced-motion ? root.theme.focus-grow-cover : 1;
-
-        animate transform-scale {
-            duration: 130ms;
-            easing: cubic-bezier(0.22, 1, 0.36, 1);
-        }
+        transform-scale: root.theme.reduced-motion ? 1 : root.grown;
 
         Ring {
             width: 100%;

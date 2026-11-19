@@ -52,19 +52,19 @@ component TextTab inherits Rectangle {
 
     property <length> u: root.theme.unit;
     property <length> side: Sizes.tab-side * root.u;
+    property <float> grown: root.chosen && root.focused ? Sizes.tab-grow : 1;
 
     width: name.preferred-width + 2 * root.side;
+
+    animate grown {
+        duration: 130ms;
+        easing: cubic-bezier(0.22, 1, 0.36, 1);
+    }
 
     Rectangle {
         y: 6 * root.u;
         height: parent.height - 12 * root.u;
-        transform-scale: root.chosen && root.focused && !root.theme.reduced-motion
-            ? Sizes.tab-grow : 1;
-
-        animate transform-scale {
-            duration: 130ms;
-            easing: cubic-bezier(0.22, 1, 0.36, 1);
-        }
+        transform-scale: root.theme.reduced-motion ? 1 : root.grown;
 
         Ring {
             width: 100%;
