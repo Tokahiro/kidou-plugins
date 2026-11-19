@@ -13,10 +13,10 @@ sha256 = "12d7e9026fe8d441ed8c462ddecb8173e04d80829a1b7c219b0c9cbc14bbd22a"
 id = "moonlight"
 name = "Mondlicht"
 category = "layout"
-version = "1.1.0"
+version = "1.1.1"
 about = "Home layout: the selected game's large cover in the middle of a still carousel"
-package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/moonlight-1.1.0.kidouplug"
-sha256 = "159d4d595cfdb76145d6f6cd7f38dc42a14e63b91f80d0a0ef250b1a3d4c17e0"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/moonlight-1.1.1.kidouplug"
+sha256 = "e79da498e6b9d9e020c33228884c4ab107f825f07e33b96d69fab0410f8d4aff"
 
 [[plugin]]
 id = "dreamscape"
