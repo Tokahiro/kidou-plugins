@@ -11,7 +11,7 @@ component Cover {
     in property <LayoutTheme> theme;
     property <length> lift: self.focused && !self.theme.reduced-motion
         ? -self.theme.focus-lift-cover : 0;
-    animate lift { duration: 180ms; easing: ease-out; }
+    animate lift { duration: 130ms; easing: ease-out; }
     width: 240 * self.theme.unit;
     height: 360 * self.theme.unit;
     Rectangle {
