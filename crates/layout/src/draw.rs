@@ -2,14 +2,17 @@
 //! of its own, then [`check`](crate::check) and [`compile`](crate::compile). An SVG can draw for
 //! minutes or ask for gigabytes, which a check of its elements does not foresee, so each process
 //! has [`TIME_MAX`], all of a layout's SVGs together [`TOTAL_TIME_MAX`], and past either the
-//! layout is refused. The program that draws runs [`draw`], and sets [`MEMORY_MAX`] for itself
-//! where its system can.
+//! layout is refused. The program that draws runs [`draw`]. Kidō's own sets [`MEMORY_MAX`] for
+//! itself first, on Windows; no limit of memory is set here.
 
 use std::io::{Read, Write};
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
+
+/// How often [`in_child`] looks whether the process that closed its output has ended.
+const ENDED_EVERY: Duration = Duration::from_millis(10);
 
 use crate::{Files, MAX_FILE};
 
@@ -47,7 +50,10 @@ pub fn draw(input: impl Read, mut output: impl Write) -> Result<(), String> {
         .read_to_end(&mut svg)
         .map_err(|error| error.to_string())?;
     let png = crate::draw_svg(&svg)?;
-    output.write_all(&png).map_err(|error| error.to_string())
+    output
+        .write_all(&png)
+        .and_then(|()| output.flush())
+        .map_err(|error| error.to_string())
 }
 
 /// The SVG `svg` drawn as a PNG by `drawer draw`, or why not: refused, larger than
@@ -60,21 +66,29 @@ fn in_child(drawer: &Path, svg: &[u8], time: Duration) -> Result<Vec<u8>, String
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| format!("{}: {error}", drawer.display()))?;
+    let png = answer(&mut child, svg.to_vec(), time.min(TIME_MAX));
+    if png.is_err() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    png
+}
+
+/// The PNG the drawing process `child` writes of `svg`, where it ends well within `time`.
+fn answer(child: &mut Child, svg: Vec<u8>, time: Duration) -> Result<Vec<u8>, String> {
     let (Some(mut stdin), Some(stdout), Some(mut stderr)) =
         (child.stdin.take(), child.stdout.take(), child.stderr.take())
     else {
-        let _ = child.kill();
         return Err("the drawing process has no pipes".to_owned());
     };
-    let svg = svg.to_vec();
     // Each pipe on a thread of its own, so that no full pipe stops the process.
     std::thread::spawn(move || {
         let _ = stdin.write_all(&svg);
     });
     let why = std::thread::spawn(move || {
-        let mut why = String::new();
-        let _ = (&mut stderr).take(4096).read_to_string(&mut why);
-        why
+        let mut why = Vec::new();
+        let _ = (&mut stderr).take(4096).read_to_end(&mut why);
+        String::from_utf8_lossy(&why).into_owned()
     });
     let (sent, read) = mpsc::channel();
     std::thread::spawn(move || {
@@ -82,22 +96,28 @@ fn in_child(drawer: &Path, svg: &[u8], time: Duration) -> Result<Vec<u8>, String
         let result = stdout.take(MAX_FILE + 1).read_to_end(&mut png).map(|_| png);
         let _ = sent.send(result);
     });
-    let Ok(png) = read.recv_timeout(time.min(TIME_MAX)) else {
-        let _ = child.kill();
-        let _ = child.wait();
-        return Err(format!(
+    let start = Instant::now();
+    let late = || {
+        format!(
             "it draws longer than its time, {} s for one SVG and {} s for all",
             TIME_MAX.as_secs(),
             TOTAL_TIME_MAX.as_secs()
-        ));
+        )
     };
-    let png = png.map_err(|error| error.to_string())?;
+    let png = read
+        .recv_timeout(time)
+        .map_err(|_| late())?
+        .map_err(|error| error.to_string())?;
     if u64::try_from(png.len()).is_ok_and(|size| size > MAX_FILE) {
-        let _ = child.kill();
-        let _ = child.wait();
         return Err(format!("drawn as a PNG larger than {MAX_FILE} bytes"));
     }
-    let status = child.wait().map_err(|error| error.to_string())?;
+    let status = loop {
+        match child.try_wait().map_err(|error| error.to_string())? {
+            Some(status) => break status,
+            None if start.elapsed() < time => std::thread::sleep(ENDED_EVERY),
+            None => return Err(late()),
+        }
+    };
     if !status.success() {
         let why = why.join().unwrap_or_default();
         let why = why.trim();
