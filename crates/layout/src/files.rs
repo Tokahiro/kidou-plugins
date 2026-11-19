@@ -131,9 +131,11 @@ impl Files {
         self.files.get(name).map(Vec::as_slice)
     }
 
-    /// The names of the files, sorted.
-    pub fn names(&self) -> impl Iterator<Item = &str> {
-        self.files.keys().map(String::as_str)
+    /// Each file as (name, bytes), sorted by name: what [`Files::of`] takes.
+    pub fn entries(&self) -> impl Iterator<Item = (&str, &[u8])> {
+        self.files
+            .iter()
+            .map(|(name, bytes)| (name.as_str(), bytes.as_slice()))
     }
 
     /// The layout of an installed plugin, whose folder is `plugin`: its files under [`FOLDER`]
@@ -201,7 +203,7 @@ impl Files {
 
     /// The names of the layout's SVGs.
     fn svgs(&self) -> impl Iterator<Item = &str> {
-        self.names()
+        (self.files.keys().map(String::as_str))
             .filter(|name| kind_of(name).as_deref() == Some("svg"))
     }
 

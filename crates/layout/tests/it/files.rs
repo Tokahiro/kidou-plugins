@@ -104,6 +104,17 @@ fn packages_built_in_memory_keep_the_folder_depth_of_a_read() {
     assert!(Files::of([("a/b/c/d/x.slint", b"".as_slice())]).is_err());
 }
 
+#[test]
+fn the_entries_are_each_file_with_its_bytes_in_name_order() {
+    let files = Files::of([("b/x.slint", b"two".as_slice()), ("a.slint", b"one")]).expect("files");
+    let entries: Vec<_> = files.entries().collect();
+    assert_eq!(
+        entries,
+        [("a.slint", b"one".as_slice()), ("b/x.slint", b"two")]
+    );
+    assert_eq!(Files::of(entries), Ok(files));
+}
+
 /// The sample installed as `kidouplug` installs it, in a plugin folder of the test's own: its
 /// layout, and the PNG drawn of its SVG.
 fn installed(name: &str) -> std::path::PathBuf {
@@ -111,8 +122,8 @@ fn installed(name: &str) -> std::path::PathBuf {
     let layout = plugin.join(kidou_layout::FOLDER);
     std::fs::create_dir_all(&layout).expect("the layout's folder");
     let files = crate::drawn(Files::read(&good()).expect("the sample reads"));
-    for file in files.names() {
-        std::fs::write(layout.join(file), files.get(file).unwrap_or_default()).expect("a file");
+    for (file, bytes) in files.entries() {
+        std::fs::write(layout.join(file), bytes).expect("a file");
     }
     let drawn = plugin.join(kidou_layout::DRAWN);
     std::fs::create_dir_all(&drawn).expect("the drawn folder");
