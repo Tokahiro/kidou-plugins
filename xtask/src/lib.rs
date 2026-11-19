@@ -10,13 +10,14 @@
 
 use std::fmt::Write as _;
 use std::fs;
+use std::io::Read as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use flate2::{Compression, write::GzEncoder};
+use flate2::{Compression, read::GzDecoder, write::GzEncoder};
 use kidou_layout::Files;
 use sha2::{Digest, Sha256};
-use tar::{Builder, EntryType, Header};
+use tar::{Archive, Builder, EntryType, Header};
 use toml_edit::{DocumentMut, Table, value};
 
 /// Where Kidō reads a package of this repository.
@@ -68,6 +69,8 @@ pub struct Source {
     pub folder: PathBuf,
     pub id: String,
     pub version: String,
+    /// The version of its category's interface it is built for.
+    pub api: String,
     pub category: &'static str,
     brings: Brings,
     root: PathBuf,
@@ -160,7 +163,7 @@ impl Source {
 
 /// Each plugin with its source under `root`, by category and id; refuses a manifest whose id is
 /// not its folder's name, none Kidō's list takes or that of a plugin of another category, whose
-/// category is not its folder's, or whose version is not three numbers.
+/// category is not its folder's, or whose version or `api` is not three numbers.
 pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
     let mut found = Vec::new();
     for (category, folder, brings) in SOURCES {
@@ -205,16 +208,17 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
             if found.iter().any(|other: &Source| other.id == id) {
                 return Err(format!("{}: a second plugin `{id}`", at.display()));
             }
-            if numbers(&version).is_none() {
-                return Err(format!(
-                    "{}: `{version}` is not three numbers",
-                    at.display()
-                ));
+            let api = word("api")?;
+            for word in [&version, &api] {
+                if numbers(word).is_none() {
+                    return Err(format!("{}: `{word}` is not three numbers", at.display()));
+                }
             }
             found.push(Source {
                 folder,
                 id,
                 version,
+                api,
                 category,
                 brings,
                 root: root.to_owned(),
@@ -303,12 +307,26 @@ pub fn sha256(bytes: &[u8]) -> String {
     sum
 }
 
+/// The `api` of the manifest the package `bytes` holds: the interface version its plugin is
+/// built for.
+fn built_for(bytes: &[u8]) -> Option<String> {
+    let mut archive = Archive::new(GzDecoder::new(bytes));
+    let mut manifest = (archive.entries().ok()?)
+        .filter_map(Result::ok)
+        .find(|entry| entry.path().is_ok_and(|path| path == Path::new(MANIFEST)))?;
+    let mut text = String::new();
+    manifest.read_to_string(&mut text).ok()?;
+    let manifest: DocumentMut = text.parse().ok()?;
+    Some(manifest.get("api")?.as_str()?.to_owned())
+}
+
 /// What is wrong with the list and the sources under `root`, one line each: a listed package
-/// that is missing, has another SHA-256 or another address than its id and version give; a
-/// source that does not pack; a source that changed under a version already packed; a new
-/// version that is not later than the listed one; and a pack that names a plugin the list does
-/// not offer yet. A new plugin's entry names no `version` until `pack` lists it, and a source
-/// the list does not name ([`unlisted`]) only has to pack.
+/// that is missing, has another SHA-256 or another address than its id and version give, or
+/// whose manifest names another `api` than the list; a source that does not pack; a source
+/// that changed under a version already packed; a new version that is not later than the
+/// listed one; and a pack that names a plugin the list does not offer yet. A new plugin's
+/// entry names no `version` until `pack` lists it, and a source the list does not name
+/// ([`unlisted`]) only has to pack.
 pub fn check(root: &Path) -> Result<Vec<String>, String> {
     let list = read(&root.join(LIST))?;
     let sources = sources(root)?;
@@ -327,7 +345,20 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
             wrong.push(format!("{id}: `package` is not {PACKAGES}/{file}"));
         }
         match fs::read(root.join("packages").join(&file)) {
-            Ok(bytes) if Some(sha256(&bytes).as_str()) == word("sha256") => {}
+            Ok(bytes) if Some(sha256(&bytes).as_str()) == word("sha256") => {
+                match built_for(&bytes) {
+                    Some(api) if Some(api.as_str()) == word("api") => {}
+                    Some(api) if word("api").is_none() => wrong.push(format!(
+                        "{id}: no `api`; the manifest in packages/{file} names {api}"
+                    )),
+                    Some(api) => wrong.push(format!(
+                        "{id}: `api` is not {api}, which the manifest in packages/{file} names"
+                    )),
+                    None => wrong.push(format!(
+                        "{id}: the manifest in packages/{file} names no `api`"
+                    )),
+                }
+            }
             Ok(_) => wrong.push(format!("{id}: `sha256` is not that of packages/{file}")),
             Err(why) => wrong.push(format!("{id}: packages/{file}: {why}")),
         }
@@ -421,7 +452,7 @@ pub fn unlisted(root: &Path) -> Result<Vec<String>, String> {
 }
 
 /// Writes the package of each listed source under `root` whose version has none, and gives the
-/// list's entry its version, address and SHA-256. Gives each plugin packed, as
+/// list's entry its version, `api`, address and SHA-256. Gives each plugin packed, as
 /// `<id> <version>`. Writes nothing where one of them does not pack.
 pub fn pack_new(root: &Path) -> Result<Vec<String>, String> {
     let at = root.join(LIST);
@@ -443,6 +474,7 @@ pub fn pack_new(root: &Path) -> Result<Vec<String>, String> {
         };
         let bytes = source.pack()?;
         entry["version"] = value(&source.version);
+        entry["api"] = value(&source.api);
         entry["package"] = value(format!("{PACKAGES}/{}", source.package()));
         entry["sha256"] = value(sha256(&bytes));
         new.push((file, bytes, format!("{} {}", source.id, source.version)));
