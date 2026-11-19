@@ -2,6 +2,7 @@
 //! the sample in `good/` and from layouts written to misbehave.
 
 mod check;
+mod contract;
 mod files;
 
 use std::path::{Path, PathBuf};
