@@ -22,7 +22,9 @@ plugins = ["lamp"]
 "#;
 
 fn manifest(version: &str) -> String {
-    format!("id = \"lamp\"\nname = \"Lampe\"\nversion = \"{version}\"\ncategory = \"layout\"\n")
+    format!(
+        "id = \"lamp\"\nname = \"Lampe\"\nversion = \"{version}\"\ncategory = \"layout\"\napi = \"3.1.0\"\n"
+    )
 }
 
 /// A repository named `name` with the plugin `lamp` 1.0.0 as a source, listed and not yet packed.
@@ -60,6 +62,7 @@ fn a_new_version_is_packed_and_listed_once() {
     for line in [
         "# The list.".to_owned(),
         "version = \"1.0.0\"".to_owned(),
+        "api = \"3.1.0\"".to_owned(),
         format!("package = \"{PACKAGES}/lamp-1.0.0.kidouplug\""),
         format!("sha256 = \"{}\"", sha256(&package)),
         "about = \"Home layout: a lamp\"".to_owned(),
@@ -205,6 +208,22 @@ fn check_names_what_differs() {
 }
 
 #[test]
+fn the_lists_api_is_held_to_the_packages_manifest() {
+    let api = "api = \"3.1.0\"\n";
+    for (name, listed) in [("api-differs", "api = \"3.0.0\"\n"), ("api-gone", "")] {
+        let root = packed(name);
+        let list = fs::read_to_string(root.join("index.toml")).expect("the list");
+        assert!(list.contains(api), "{list}");
+        fs::write(root.join("index.toml"), list.replace(api, listed)).expect("the list");
+        assert_eq!(
+            check(&root).expect("a check"),
+            ["lamp: `api` is not 3.1.0, which the manifest in packages/lamp-1.0.0.kidouplug names"],
+            "{name}"
+        );
+    }
+}
+
+#[test]
 fn a_source_whose_version_has_no_package_yet_passes_the_check() {
     let root = packed("pending");
     fs::write(root.join("layouts/lamp/plugin.toml"), manifest("1.1.0")).expect("the manifest");
@@ -249,7 +268,7 @@ fn code_repository(name: &str) -> PathBuf {
         ),
         (
             "devices/lantern/plugin.toml",
-            "id = \"lantern\"\nversion = \"1.0.0\"\ncategory = \"device\"\n",
+            "id = \"lantern\"\nversion = \"1.0.0\"\ncategory = \"device\"\napi = \"1.0.0\"\n",
         ),
         (
             "devices/lantern/Cargo.toml",
@@ -354,6 +373,10 @@ fn a_manifest_that_does_not_fit_its_folder_is_refused() {
             "`01.0.0` is not three numbers",
         ),
         ("id = \"lamp\"\ncategory = \"layout\"\n", "no `version`"),
+        (
+            "id = \"lamp\"\nversion = \"1.0.0\"\ncategory = \"layout\"\n",
+            "no `api`",
+        ),
     ];
     for (at, (manifest, why)) in cases.into_iter().enumerate() {
         let root = repository(&format!("manifest-{at}"));

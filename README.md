@@ -223,7 +223,7 @@ The same folder always gives the same file.
 ## How This Repository Works
 
 ```
-index.toml       Kidō's list: each plugin's id, name, category, version, package and SHA-256
+index.toml       Kidō's list: each plugin's id, name, category, version, api, package and SHA-256
 layouts/<id>/    the source of each Home layout
 devices/<id>/    the source of each device plugin
 wit/             the interfaces of the WebAssembly categories
@@ -247,7 +247,8 @@ Kidō's check of the manifest isn't part of it, nor the time and memory limits K
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 
-A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `package` and `sha256`.
+A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `api`, `package` and `sha256`.
+Kidō offers a listed plugin only where it runs the plugin's `api`.
 Until it has that entry, CI checks and builds the source, and writes no package.
 
 Run the same check yourself with a Rust toolchain. It builds Slint's compiler, which on Linux needs fontconfig's development files (`libfontconfig-dev`):
