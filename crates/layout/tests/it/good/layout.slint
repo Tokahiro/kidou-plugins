@@ -9,9 +9,10 @@ component Cover {
     in property <LayoutTile> tile;
     in property <bool> focused;
     in property <LayoutTheme> theme;
-    property <length> lift: self.focused && !self.theme.reduced-motion
-        ? -self.theme.focus-lift-cover : 0;
-    animate lift { duration: 180ms; easing: ease-out; }
+    // Read only in full motion, so that reduced motion starts no animation.
+    property <length> lifted: self.focused ? -self.theme.focus-lift-cover : 0;
+    property <length> lift: self.theme.reduced-motion ? 0 : self.lifted;
+    animate lifted { duration: 180ms; easing: ease-out; }
     width: 240 * self.theme.unit;
     height: 360 * self.theme.unit;
     Rectangle {
@@ -66,8 +67,9 @@ export component Layout {
 
     property <length> step: 280 * root.theme.unit;
     property <length> middle: (root.width - 240 * root.theme.unit) / 2;
-    property <length> slide: -root.focused * root.step;
-    animate slide { duration: 220ms; easing: ease-in-out; }
+    property <length> slid: -root.focused * root.step;
+    property <length> slide: root.theme.reduced-motion ? -root.focused * root.step : root.slid;
+    animate slid { duration: 220ms; easing: ease-in-out; }
 
     Image {
         width: 100%;
