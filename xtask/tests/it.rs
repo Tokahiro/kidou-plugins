@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use xtask::{MAX_ENTRIES, PACKAGES, check, pack_new, sha256, sources};
+use xtask::{MAX_ENTRIES, PACKAGES, check, layouts, pack_new, sha256, sources};
 
 const LIST: &str = r#"# The list.
 
@@ -253,4 +253,20 @@ fn an_id_that_kidos_list_would_drop_is_refused() {
         let refused = check(&root).expect_err("a refusal");
         assert!(refused.contains("is no id of Kidō's"), "{id}: {refused}");
     }
+}
+
+#[test]
+fn layouts_names_each_layout_kidou_would_refuse() {
+    let root = repository("layouts");
+    let wrong = layouts(&root).expect("a check");
+    assert!(!wrong.is_empty(), "a file with no `Layout` passed");
+    assert!(
+        wrong.iter().all(|line| line.starts_with("lamp: ")),
+        "{wrong:?}"
+    );
+    let good = Path::new(env!("CARGO_MANIFEST_DIR")).join("../crates/layout/tests/it/good");
+    for file in ["layout.slint", "mark.svg"] {
+        fs::copy(good.join(file), root.join("layouts/lamp/layout").join(file)).expect("a copy");
+    }
+    assert_eq!(layouts(&root).expect("a check"), [""; 0]);
 }

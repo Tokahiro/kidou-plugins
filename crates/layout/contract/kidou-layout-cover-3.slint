@@ -1,0 +1,207 @@
+// The game's cover of Kidō's parts, which kidou-layout-parts-3.slint exports: a layout imports it
+// from there.
+
+import { LayoutTheme, LayoutTitleLength } from "kidou-layout-3.slint";
+
+// A game's portrait cover: its art, whose corners come painted, with the title set over art that
+// does not show it; for a game without art, the calm fallback with its title at the bottom left,
+// or for a program, the cover Kidō makes of its icon and colour. The ok dot in a disc at the top
+// left marks a game that runs, and `badge`, where it is set, the store at the bottom right. A
+// resting cover carries a still gloss. Its shadow, ring and lift are the layout's.
+export component Cover inherits Rectangle {
+    in property <LayoutTheme> theme;
+    in property <image> art;
+    in property <bool> missing;
+    in property <bool> shows-title: true;
+    in property <LayoutTitleLength> title-length;
+    in property <image> icon;
+    in property <color> tint;
+    in property <string> title;
+    // The size of a short title set over art, and of the fallback's title.
+    in property <length> title-size: 26 * root.theme.unit;
+    in property <length> fallback-size: 23 * root.theme.unit * root.theme.text-scale;
+    in property <string> badge;
+    in property <bool> running;
+    in property <bool> gloss;
+    in property <length> radius: root.theme.radius-cover;
+
+    property <length> u: root.theme.unit;
+    property <bool> made: root.missing && root.icon.width > 0;
+    property <bool> fallback: root.missing && !root.made;
+    // The made cover's size against the Library's cover of 261 × 392, as its parts scale with it.
+    property <float> scale: min(root.width / (261 * root.u), root.height / (392 * root.u));
+
+    border-radius: root.radius;
+
+    if !root.missing: Image {
+        width: 100%;
+        height: 100%;
+        source: root.art;
+        image-fit: fill;
+        accessible-role: none;
+    }
+
+    // `title-size` for a short title, 5 and 9 less for longer ones, never under 14.
+    if !root.missing && !root.shows-title: Text {
+        x: 16 * root.u;
+        width: parent.width - 32 * root.u;
+        text: root.title.to-uppercase();
+        font-size: max(14 * root.u, root.title-size
+            - (root.title-length == LayoutTitleLength.long ? 9
+                : root.title-length == LayoutTitleLength.medium ? 5 : 0) * root.u);
+        font-weight: 700;
+        letter-spacing: self.font-size * 0.08;
+        line-height-factor: 1.05;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        color: root.theme.text;
+        accessible-role: none;
+    }
+
+    // The program's colour at .45 over the fallback's gradient, its icon on a plate with corners
+    // of 22 %, and its name under it.
+    if root.made: Rectangle {
+        border-radius: root.radius;
+        background: root.theme.missing-art;
+
+        Rectangle {
+            border-radius: root.radius;
+            background: root.tint.with-alpha(0.45);
+        }
+
+        VerticalLayout {
+            padding-left: parent.width * 0.1;
+            padding-right: parent.width * 0.1;
+            spacing: 22 * root.u * root.scale;
+            alignment: center;
+
+            HorizontalLayout {
+                alignment: center;
+
+                Rectangle {
+                    width: 128 * root.u * root.scale;
+                    height: self.width;
+
+                    Image {
+                        width: 100%;
+                        height: 100%;
+                        source: root.icon;
+                        image-fit: contain;
+                        accessible-role: none;
+                    }
+
+                    Rectangle {
+                        border-radius: parent.width * 0.22;
+                        border-width: 1px;
+                        border-color: root.theme.white-08;
+                    }
+                }
+            }
+
+            if root.scale >= 15 / 24: Text {
+                text: root.title;
+                font-size: max(15 * root.u, 24 * root.u * root.scale) * root.theme.text-scale;
+                font-weight: 600;
+                line-height-factor: 1.2;
+                wrap: word-wrap;
+                horizontal-alignment: center;
+                color: root.theme.text;
+                accessible-role: none;
+            }
+        }
+    }
+
+    if root.fallback: Rectangle {
+        border-radius: root.radius;
+        background: root.theme.missing-art;
+    }
+
+    if root.fallback && root.theme.world-symbol.width > 0: Image {
+        x: (parent.width - self.width) / 2;
+        y: parent.height * 0.38 - self.height / 2;
+        width: max(24 * root.u, parent.width * 0.3);
+        height: self.width;
+        source: root.theme.world-symbol;
+        colorize: root.theme.muted;
+        accessible-role: none;
+    }
+
+    if root.fallback: Text {
+        x: 18 * root.u;
+        y: parent.height - self.height - 48 * root.u;
+        width: parent.width - 36 * root.u;
+        height: self.preferred-height;
+        text: root.title;
+        font-size: root.fallback-size;
+        font-weight: 500;
+        line-height-factor: 1.15;
+        wrap: word-wrap;
+        color: root.theme.text;
+        accessible-role: none;
+    }
+
+    // A highlight at the upper left, which fades out before its own edges, and a diagonal sheen.
+    if root.gloss && !root.missing: Rectangle {
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width * 0.7;
+            height: parent.height * 0.5;
+            background: @radial-gradient(circle, #ffffff1f 0%, #ffffff00 50%);
+        }
+
+        Rectangle {
+            border-radius: root.radius;
+            background: @linear-gradient(125deg, #ffffff00 38%, #ffffff2b 48%, #ffffff00 58%);
+        }
+    }
+
+    if root.running: Rectangle {
+        x: 14 * root.u;
+        y: 14 * root.u;
+        width: 30 * root.u;
+        height: 30 * root.u;
+        border-radius: self.width / 2;
+        background: #00000080;
+
+        Rectangle {
+            width: 14 * root.u;
+            height: 14 * root.u;
+            border-radius: self.width / 2;
+            background: root.theme.ok;
+        }
+    }
+
+    if root.badge != "": Rectangle {
+        property <length> pad: 9 * root.u;
+
+        x: parent.width - self.width - 10 * root.u;
+        y: parent.height - self.height - 10 * root.u;
+        width: label.preferred-width + 2 * self.pad;
+        height: 28 * root.u;
+        border-radius: self.height / 2;
+        background: #000000a8;
+
+        // The light along its top edge.
+        Rectangle {
+            x: parent.height / 2;
+            y: 1px;
+            width: max(0px, parent.width - parent.height);
+            height: 1px;
+            background: #ffffff29;
+        }
+
+        label := Text {
+            x: parent.pad;
+            width: self.preferred-width;
+            text: root.badge;
+            font-size: 16 * root.u * root.theme.text-scale;
+            font-weight: 700;
+            letter-spacing: self.font-size * 0.08;
+            color: root.theme.text;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+}

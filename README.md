@@ -152,7 +152,7 @@ my-layout/
 ```
 
 The five layouts in [`layouts/`](layouts) are the reference; start from the one closest to what you want.
-The contract's own files are part of Kidō, which isn't public yet, so this section sums them up.
+The contract's own files are in [`crates/layout/contract/`](crates/layout/contract); this section sums them up.
 
 ### What Kidō Does, and What the Layout Does
 
@@ -231,13 +231,14 @@ To change a layout:
 3. Open a pull request.
 
 CI checks that the list, the packages and the sources fit each other, and that the source packs.
-It doesn't run Kidō's own check of the manifest and the layout, so install your change with `kidouplug` before you open the pull request.
+It also runs the check Kidō runs on a Home layout at the install, from [`crates/layout/`](crates/layout), which is the code Kidō itself builds.
+Kidō's check of the manifest isn't part of it, nor the time and memory limits Kidō sets for drawing an SVG, so install a new plugin with `kidouplug` once before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 
 A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `package` and `sha256`.
 
-Run the same check yourself with a Rust toolchain:
+Run the same check yourself with a Rust toolchain. It builds Slint's compiler, which on Linux needs fontconfig's development files (`libfontconfig-dev`):
 
 ```
 cargo xtask check

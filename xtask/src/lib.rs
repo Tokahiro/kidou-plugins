@@ -1,14 +1,15 @@
 //! Kidō's plugin list held to the sources of this repository: `check` finds what differs, and
 //! `pack` writes the package of each source whose version has none and lists it.
 //!
-//! The package rules here are those of `kidouplug pack`. Whether a manifest and a layout are
-//! ones Kidō takes is Kidō's check, which runs at the install.
+//! The package rules here are those of `kidouplug pack`, and `layouts` runs the check Kidō runs
+//! on a Home layout at the install. Whether a manifest is one Kidō takes is Kidō's check alone.
 
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use flate2::{Compression, write::GzEncoder};
+use kidou_layout::Files;
 use sha2::{Digest, Sha256};
 use tar::{Builder, EntryType, Header};
 use toml_edit::{DocumentMut, Table, value};
@@ -289,7 +290,6 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                 version.unwrap_or("no version"),
                 source.version
             )),
-            Ok(_) => {}
             Err(_) if version.and_then(numbers) >= numbers(&source.version) => {
                 wrong.push(format!(
                     "{id}: the new version {} is not later than the listed {}",
@@ -297,7 +297,7 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                     version.unwrap_or_default()
                 ));
             }
-            Err(_) => {}
+            Ok(_) | Err(_) => {}
         }
     }
     for pack in tables(&list, "pack") {
@@ -311,6 +311,34 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                 wrong.push(format!("pack {name}: the list offers no plugin `{id}`"));
             }
         }
+    }
+    Ok(wrong)
+}
+
+/// What Kidō would refuse in the Home layouts under `root`, one line each: a file it does not
+/// take, an SVG it does not draw, a rule of the layout check, or one of Slint's errors.
+pub fn layouts(root: &Path) -> Result<Vec<String>, String> {
+    let mut wrong = Vec::new();
+    for source in sources(root)? {
+        if source.category != "layout" {
+            continue;
+        }
+        let id = &source.id;
+        let read = Files::read(&source.folder.join(source.brings)).and_then(|mut files| {
+            files.draw(|_, svg| kidou_layout::draw_svg(svg).map_err(str::to_owned))?;
+            Ok(files)
+        });
+        let files = match read {
+            Ok(files) => files,
+            Err(why) => {
+                wrong.push(format!("{id}: {why}"));
+                continue;
+            }
+        };
+        let refused = kidou_layout::check(&files)
+            .and_then(|()| kidou_layout::compile(&files).map(|_| ()))
+            .err();
+        wrong.extend((refused.into_iter().flatten()).map(|why| format!("{id}: {why}")));
     }
     Ok(wrong)
 }
