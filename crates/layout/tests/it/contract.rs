@@ -1,7 +1,11 @@
-use kidou_layout::{CONTRACT, PARTS, VERSION};
+use std::collections::BTreeSet;
+use std::path::Path;
+
+use kidou_layout::VERSION;
 
 /// The names the contract's files export, by the version that brought them. A new name takes a
-/// new row with the next minor version, and [`VERSION`] and Kidō's `LAYOUT_CONTRACT` follow it.
+/// new row with the next minor version, never a place in a row already released, and
+/// [`VERSION`] and Kidō's `LAYOUT_CONTRACT` follow it.
 const BROUGHT: &[(&str, &[&str])] = &[
     (
         "3.0.0",
@@ -30,30 +34,43 @@ const BROUGHT: &[(&str, &[&str])] = &[
     ("3.1.0", &["Kicker", "Shoulder"]),
 ];
 
+/// The text of each file in the crate's `contract` folder: Home serves every one of them to a
+/// layout by its name.
+fn contract_files() -> Vec<String> {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("contract");
+    std::fs::read_dir(folder)
+        .expect("the contract's folder")
+        .map(|entry| std::fs::read_to_string(entry.expect("an entry").path()).expect("its text"))
+        .collect()
+}
+
 /// The names `text` exports: each `export component`, `struct`, `enum` or `global`, and each
 /// name of an `export { … }` list.
 fn exported(text: &str) -> Vec<&str> {
     let mut names = Vec::new();
     for line in text.lines() {
-        let Some(rest) = line.trim_start().strip_prefix("export ") else {
+        let Some(rest) = line.trim_start().strip_prefix("export") else {
             continue;
         };
-        if let Some(list) = rest.trim_start().strip_prefix('{') {
+        if !rest.starts_with(|next: char| next.is_whitespace() || next == '{') {
+            continue;
+        }
+        let found = if let Some(list) = rest.trim_start().strip_prefix('{') {
             let (list, _) = list
                 .split_once('}')
-                .unwrap_or_else(|| panic!("`{line}`: an export list this test reads on one line"));
-            for name in list.split(',').map(str::trim) {
-                assert!(
-                    !name.contains(' '),
-                    "`{line}`: an export under another name, which this test does not read"
-                );
-                names.push(name);
-            }
+                .unwrap_or_else(|| panic!("`{line}`: this test reads an export list on one line"));
+            list.split(',').map(str::trim).collect()
         } else {
-            let name = rest
-                .split_whitespace()
-                .nth(1)
-                .unwrap_or_else(|| panic!("`{line}`: an export with no name"));
+            vec![rest.split_whitespace().nth(1).unwrap_or_default()]
+        };
+        for name in found {
+            assert!(
+                !name.is_empty()
+                    && name
+                        .chars()
+                        .all(|letter| letter.is_alphanumeric() || letter == '-' || letter == '_'),
+                "`{line}`: this test reads `export <kind> Name` and `export {{ Name, Name }}` only"
+            );
             names.push(name);
         }
     }
@@ -62,21 +79,24 @@ fn exported(text: &str) -> Vec<&str> {
 
 #[test]
 fn the_contracts_exported_names_are_those_its_versions_brought() {
-    let mut exported = [exported(CONTRACT.1), exported(PARTS.1)].concat();
-    exported.sort_unstable();
-    let mut brought: Vec<&str> = BROUGHT
+    let files = contract_files();
+    let exported: BTreeSet<&str> = files.iter().flat_map(|text| exported(text)).collect();
+    let brought: BTreeSet<&str> = BROUGHT
         .iter()
         .flat_map(|(_, names)| names.iter().copied())
         .collect();
-    brought.sort_unstable();
     assert_eq!(
         exported, brought,
-        "a name the contract exports more is a new minor version: give it a row in BROUGHT"
+        "a name the contract exports more is a new minor version: give it a new row in BROUGHT"
     );
 }
 
 #[test]
-fn the_contracts_version_is_the_latest_that_brought_a_name() {
-    let (latest, _) = BROUGHT.last().expect("a version");
-    assert_eq!(*latest, VERSION);
+fn each_version_that_brought_a_name_is_the_next_minor_one_up_to_the_contracts() {
+    let versions: Vec<String> = (0..BROUGHT.len())
+        .map(|minor| format!("3.{minor}.0"))
+        .collect();
+    let brought: Vec<&str> = BROUGHT.iter().map(|(version, _)| *version).collect();
+    assert_eq!(brought, versions);
+    assert_eq!(brought.last(), Some(&VERSION));
 }
