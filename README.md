@@ -238,7 +238,7 @@ Players get it the next time they open "Add plugins".
 
 A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `package` and `sha256`.
 
-Run the same check yourself with a Rust toolchain:
+Run the same check yourself with a Rust toolchain. It builds Slint's compiler, which on Linux needs fontconfig's development files (`libfontconfig-dev`):
 
 ```
 cargo xtask check

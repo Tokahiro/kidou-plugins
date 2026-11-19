@@ -28,6 +28,11 @@ jobs:
             printf 'A package never changes once listed; a new version gets a new file:\n%s\n' "$changed"
             exit 1
           fi
+      # Slint's font code links fontconfig, whose development files the image does not have.
+      - name: Linux packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends libfontconfig-dev pkgconf
       # Slint's compiler, which the layout check builds, takes minutes without it.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
@@ -51,6 +56,10 @@ jobs:
         with:
           ref: main
           persist-credentials: false
+      - name: Linux packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends libfontconfig-dev pkgconf
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           save-if: false
