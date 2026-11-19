@@ -20,6 +20,15 @@ missing_errors_doc = "allow"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
 
+# What a plugin with code is packed from, and the profile Kidō's own build gives it: small, and
+# the same bytes from the same source.
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
 # Kidō builds Slint from the fork Tokahiro/slint, at one fixed commit, and compiles a Home
 # layout with that build. Slint's crates pin each other to one exact version, so each of them
 # the layout check uses is named here. Kidō's own build names the same commit: change both

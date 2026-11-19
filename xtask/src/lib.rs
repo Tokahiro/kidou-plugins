@@ -3,10 +3,15 @@
 //!
 //! The package rules here are those of `kidouplug pack`, and `layouts` runs the check Kidō runs
 //! on a Home layout at the install. Whether a manifest is one Kidō takes is Kidō's check alone.
+//!
+//! A plugin with code is built for `wasm32-wasip2` before it is packed. The compiler, the
+//! locked dependencies and the release profile are fixed in this repository, so the same source
+//! gives the same component.
 
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
 use flate2::{Compression, write::GzEncoder};
 use kidou_layout::Files;
@@ -18,9 +23,29 @@ use toml_edit::{DocumentMut, Table, value};
 pub const PACKAGES: &str = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages";
 
 /// Each category whose plugins have their source here: its name, the folder that holds them,
-/// one folder per plugin named by its id, and the folder a plugin of it brings beside its
-/// manifest.
-pub const SOURCES: [(&str, &str, &str); 1] = [("layout", "layouts", "layout")];
+/// one folder per plugin named by its id, and what a plugin of it brings beside its manifest.
+pub const SOURCES: [(&str, &str, Brings); 2] = [
+    ("layout", "layouts", Brings::Folder(kidou_layout::FOLDER)),
+    ("device", "devices", Brings::Code),
+];
+
+/// What a plugin's package holds beside its manifest.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Brings {
+    /// A folder of this name, as the source holds it.
+    Folder(&'static str),
+    /// [`WASM`], the component built from the source's crate.
+    Code,
+}
+
+/// The name of a plugin's component in its package.
+pub const WASM: &str = "plugin.wasm";
+
+/// The most bytes of a component Kidō reads.
+pub const MAX_COMPONENT: usize = 64 << 20;
+
+/// What a plugin with code is built for.
+const TARGET: &str = "wasm32-wasip2";
 
 /// The most files and folders Kidō unpacks from a package.
 pub const MAX_ENTRIES: usize = 256;
@@ -44,7 +69,8 @@ pub struct Source {
     pub id: String,
     pub version: String,
     pub category: &'static str,
-    brings: &'static str,
+    brings: Brings,
+    root: PathBuf,
 }
 
 impl Source {
@@ -53,10 +79,11 @@ impl Source {
         format!("{}-{}.kidouplug", self.id, self.version)
     }
 
-    /// Its package, as `kidouplug pack` writes it: a gzip'd tar of the manifest and the folder
-    /// its category brings, each file and folder by name and each folder before what it holds.
-    /// The same source gives the same bytes. Refuses what Kidō would not unpack: a link, a name
-    /// that does not fit, more than [`MAX_ENTRIES`] entries or [`MAX_UNPACKED`] bytes.
+    /// Its package, as `kidouplug pack` writes it: a gzip'd tar of the manifest and what its
+    /// category brings, a component built here or a folder, each file and folder by name and
+    /// each folder before what it holds. The same source gives the same bytes. Refuses what
+    /// Kidō would not unpack: a link, a name that does not fit, a component over
+    /// [`MAX_COMPONENT`] bytes, more than [`MAX_ENTRIES`] entries or [`MAX_UNPACKED`] bytes.
     pub fn pack(&self) -> Result<Vec<u8>, String> {
         let manifest = self.folder.join(MANIFEST);
         let text = fs::read(&manifest).map_err(|why| format!("{}: {why}", manifest.display()))?;
@@ -66,11 +93,14 @@ impl Source {
                 manifest.display()
             ));
         }
-        let mut files = vec![
-            (MANIFEST.to_owned(), Some(text)),
-            (self.brings.to_owned(), None),
-        ];
-        walk(&self.folder, self.brings, &mut files)?;
+        let mut files = vec![(MANIFEST.to_owned(), Some(text))];
+        match self.brings {
+            Brings::Code => files.push((WASM.to_owned(), Some(self.component()?))),
+            Brings::Folder(brings) => {
+                files.push((brings.to_owned(), None));
+                walk(&self.folder, brings, &mut files)?;
+            }
+        }
         let bytes = files.iter().filter_map(|(_, bytes)| bytes.as_ref());
         if files.len() > MAX_ENTRIES || bytes.map(Vec::len).sum::<usize>() > MAX_UNPACKED {
             return Err(format!(
@@ -94,11 +124,43 @@ impl Source {
         }
         (tar.into_inner().and_then(GzEncoder::finish)).map_err(|why| why.to_string())
     }
+
+    /// The component of its crate, built by cargo for [`TARGET`] with the release profile and
+    /// the locked dependencies of the workspace, in a target folder of its own.
+    fn component(&self) -> Result<Vec<u8>, String> {
+        let at = self.folder.join("Cargo.toml");
+        let manifest = read(&at)?;
+        let word = |table: &str| manifest.get(table)?.get("name")?.as_str();
+        let name = word("package").ok_or_else(|| format!("{}: no `package.name`", at.display()))?;
+        let library = word("lib").unwrap_or(name).replace('-', "_");
+        let target = self.root.join("target").join("code");
+        let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+        let built = Command::new(cargo)
+            .current_dir(&self.root)
+            .args(["build", "--locked", "--quiet", "--release"])
+            .args(["--target", TARGET, "-p", name, "--target-dir"])
+            .arg(&target)
+            .stdout(Stdio::null())
+            .status()
+            .map_err(|why| format!("{}: cargo did not start: {why}", self.id))?;
+        if !built.success() {
+            return Err(format!("{}: cargo could not build `{name}`", self.id));
+        }
+        let file = (target.join(TARGET).join("release")).join(format!("{library}.wasm"));
+        let bytes = fs::read(&file).map_err(|why| format!("{}: {why}", file.display()))?;
+        if bytes.len() > MAX_COMPONENT {
+            return Err(format!(
+                "{}: larger than {MAX_COMPONENT} bytes",
+                file.display()
+            ));
+        }
+        Ok(bytes)
+    }
 }
 
 /// Each plugin with its source under `root`, by category and id; refuses a manifest whose id is
-/// not its folder's name or none Kidō's list takes, whose category is not its folder's, or
-/// whose version is not three numbers.
+/// not its folder's name, none Kidō's list takes or that of a plugin of another category, whose
+/// category is not its folder's, or whose version is not three numbers.
 pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
     let mut found = Vec::new();
     for (category, folder, brings) in SOURCES {
@@ -140,6 +202,9 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
             if word("category")? != category {
                 return Err(format!("{}: no `{category}` plugin", at.display()));
             }
+            if found.iter().any(|other: &Source| other.id == id) {
+                return Err(format!("{}: a second plugin `{id}`", at.display()));
+            }
             if numbers(&version).is_none() {
                 return Err(format!(
                     "{}: `{version}` is not three numbers",
@@ -152,6 +217,7 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
                 version,
                 category,
                 brings,
+                root: root.to_owned(),
             });
         }
     }
@@ -235,18 +301,17 @@ pub fn sha256(bytes: &[u8]) -> String {
 
 /// What is wrong with the list and the sources under `root`, one line each: a listed package
 /// that is missing, has another SHA-256 or another address than its id and version give; a
-/// source the list does not name, or that does not pack; a source that changed under a version
-/// already packed; a new version that is not later than the listed one; and a pack that names a
-/// plugin the list does not offer yet. A new plugin's entry names no `version` until `pack` lists it.
+/// source that does not pack; a source that changed under a version already packed; a new
+/// version that is not later than the listed one; and a pack that names a plugin the list does
+/// not offer yet. A new plugin's entry names no `version` until `pack` lists it, and a source
+/// the list does not name ([`unlisted`]) only has to pack.
 pub fn check(root: &Path) -> Result<Vec<String>, String> {
     let list = read(&root.join(LIST))?;
     let sources = sources(root)?;
     let mut wrong = Vec::new();
-    let mut listed = Vec::new();
     for plugin in tables(&list, "plugin") {
         let word = |key: &str| plugin.get(key).and_then(|item| item.as_str());
         let id = word("id").unwrap_or("");
-        listed.push((id, word("version"), word("category").unwrap_or("")));
         let Some(version) = word("version") else {
             if !sources.iter().any(|source| source.id == id) {
                 wrong.push(format!("{id}: no `version`, and no source to pack"));
@@ -265,11 +330,9 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
     }
     for source in &sources {
         let id = &source.id;
-        let Some((_, version, category)) = listed.iter().find(|(listed, ..)| listed == id) else {
-            wrong.push(format!("{id}: the list has no [[plugin]] of this id"));
-            continue;
-        };
-        if *category != source.category {
+        let listed = entry(&list, id);
+        let word = |key: &str| listed?.get(key)?.as_str();
+        if listed.is_some() && word("category") != Some(source.category) {
             wrong.push(format!("{id}: the list names another category"));
         }
         let packed = match source.pack() {
@@ -279,13 +342,17 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                 continue;
             }
         };
+        if listed.is_none() {
+            continue;
+        }
+        let version = word("version");
         match fs::read(root.join("packages").join(source.package())) {
             Ok(listed) if listed != packed => wrong.push(format!(
                 "{id}: the source differs from packages/{}: a package never changes, so give \
                  the plugin a new version",
                 source.package()
             )),
-            Ok(_) if *version != Some(&source.version) => wrong.push(format!(
+            Ok(_) if version != Some(&source.version) => wrong.push(format!(
                 "{id}: the list names {}, the source {}",
                 version.unwrap_or("no version"),
                 source.version
@@ -304,10 +371,8 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
         let name = pack.get("id").and_then(|item| item.as_str()).unwrap_or("");
         let ids = pack.get("plugins").and_then(|item| item.as_array());
         for id in ids.into_iter().flatten().filter_map(|id| id.as_str()) {
-            let offered = |(listed, version, _): &(&str, Option<&str>, &str)| {
-                *listed == id && version.is_some()
-            };
-            if !listed.iter().any(offered) {
+            let version = entry(&list, id).and_then(|plugin| plugin.get("version")?.as_str());
+            if version.is_none() {
                 wrong.push(format!("pack {name}: the list offers no plugin `{id}`"));
             }
         }
@@ -324,7 +389,7 @@ pub fn layouts(root: &Path) -> Result<Vec<String>, String> {
             continue;
         }
         let id = &source.id;
-        let read = Files::read(&source.folder.join(source.brings)).and_then(|mut files| {
+        let read = Files::read(&source.folder.join(kidou_layout::FOLDER)).and_then(|mut files| {
             files.draw(|_, svg| kidou_layout::draw_svg(svg).map_err(str::to_owned))?;
             Ok(files)
         });
@@ -343,9 +408,17 @@ pub fn layouts(root: &Path) -> Result<Vec<String>, String> {
     Ok(wrong)
 }
 
-/// Writes the package of each source under `root` whose version has none, and gives the list's
-/// entry its version, address and SHA-256. Gives each plugin packed, as `<id> <version>`.
-/// Writes nothing where one of them does not pack or is not listed.
+/// The id of each source under `root` that the list does not name: Kidō does not offer it, and
+/// `pack` writes no package of it.
+pub fn unlisted(root: &Path) -> Result<Vec<String>, String> {
+    let list = read(&root.join(LIST))?;
+    let sources = sources(root)?.into_iter().map(|source| source.id);
+    Ok(sources.filter(|id| entry(&list, id).is_none()).collect())
+}
+
+/// Writes the package of each listed source under `root` whose version has none, and gives the
+/// list's entry its version, address and SHA-256. Gives each plugin packed, as
+/// `<id> <version>`. Writes nothing where one of them does not pack.
 pub fn pack_new(root: &Path) -> Result<Vec<String>, String> {
     let at = root.join(LIST);
     let mut list = read(&at)?;
@@ -355,14 +428,16 @@ pub fn pack_new(root: &Path) -> Result<Vec<String>, String> {
         if file.exists() {
             continue;
         }
-        let bytes = source.pack()?;
-        let entry = (list.get_mut("plugin"))
+        let Some(entry) = (list.get_mut("plugin"))
             .and_then(|plugins| plugins.as_array_of_tables_mut())
             .and_then(|plugins| {
                 (plugins.iter_mut())
                     .find(|plugin| plugin.get("id").and_then(|id| id.as_str()) == Some(&source.id))
             })
-            .ok_or_else(|| format!("{}: the list has no [[plugin]] of this id", source.id))?;
+        else {
+            continue;
+        };
+        let bytes = source.pack()?;
         entry["version"] = value(&source.version);
         entry["package"] = value(format!("{PACKAGES}/{}", source.package()));
         entry["sha256"] = value(sha256(&bytes));
@@ -384,6 +459,11 @@ fn read(file: &Path) -> Result<DocumentMut, String> {
     let text = fs::read_to_string(file).map_err(|why| at(why.to_string()))?;
     text.parse()
         .map_err(|why: toml_edit::TomlError| at(why.to_string()))
+}
+
+/// The list's entry of the plugin `id`.
+fn entry<'a>(list: &'a DocumentMut, id: &str) -> Option<&'a Table> {
+    tables(list, "plugin").find(|plugin| plugin.get("id").and_then(|id| id.as_str()) == Some(id))
 }
 
 fn tables<'a>(list: &'a DocumentMut, key: &str) -> impl Iterator<Item = &'a Table> {
