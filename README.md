@@ -191,7 +191,7 @@ It gives these back:
 | `focused-place` | Where the focused game stands, for the launch animation |
 | `activated(int)`, `tab-tapped(int)` | A tap on a game or on a tab |
 
-Ready parts come with the contract, among them `Cover`, `RowCover`, `HeroTitle`, `Facts`, `EmptyCard`, `Glass` and `Ring`.
+Ready parts come with the contract, among them `Cover`, `RowCover`, `HeroTitle`, `Kicker`, `Facts`, `EmptyCard`, `Shoulder`, `Glass` and `Ring`.
 
 ### What Kidō Refuses
 

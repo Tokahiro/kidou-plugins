@@ -9,7 +9,7 @@ import {
     LayoutPlace,
 } from "kidou-layout-3.slint";
 import {
-    EmptyCard, Facts, HeroTitle, Ring, RingStyle, RowCover,
+    EmptyCard, Facts, HeroTitle, Kicker, Ring, RingStyle, RowCover, Shoulder,
 } from "kidou-layout-parts-3.slint";
 
 // The row's covers at the Kartengröße and the places of the words and the tabs, in canvas px.
@@ -92,46 +92,6 @@ component TextTab inherits Rectangle {
             width: Sizes.tab-line-width * root.u;
             height: Sizes.tab-line-height * root.u;
             background: root.theme.text;
-        }
-    }
-
-    @children
-}
-
-// A pill at an end of the tabs, LT or RT, which steps them: fainter and wider than a hint's pill,
-// 8 further from the tabs than they stand from each other.
-component Shoulder inherits Rectangle {
-    in property <LayoutTheme> theme;
-    in property <string> letters;
-    in property <bool> leading;
-
-    property <length> u: root.theme.unit;
-    out property <length> pill-x: pill.x;
-    out property <length> pill-width: pill.width;
-
-    width: pill.width + 8 * root.u;
-    height: 46 * root.u;
-
-    pill := Rectangle {
-        x: root.leading ? 0px : 8 * root.u;
-        y: (root.height - self.height) / 2;
-        width: row.preferred-width;
-        height: 34 * root.u;
-        border-radius: 10 * root.u;
-        background: root.theme.white-08;
-
-        row := HorizontalLayout {
-            padding-left: 8 * root.u;
-            padding-right: 8 * root.u;
-
-            Text {
-                text: root.letters;
-                font-size: 18 * root.u * root.theme.text-scale;
-                font-weight: 700;
-                color: root.theme.text;
-                vertical-alignment: center;
-                accessible-role: none;
-            }
         }
     }
 
@@ -239,29 +199,9 @@ export component Layout {
         height: self.preferred-height;
         spacing: 14 * root.u;
 
-        kicker := HorizontalLayout {
-            spacing: 14 * root.u;
-            alignment: start;
-
-            VerticalLayout {
-                alignment: center;
-
-                Rectangle {
-                    width: 28 * root.u;
-                    height: 2 * root.u;
-                    background: @linear-gradient(90deg, root.theme.accent 0%,
-                        root.theme.accent-label 100%);
-                }
-            }
-
-            Text {
-                text: root.hero.kicker.to-uppercase();
-                font-size: 18 * root.t;
-                font-weight: 600;
-                letter-spacing: self.font-size * 0.16;
-                color: root.theme.accent-label;
-                vertical-alignment: center;
-            }
+        kicker := Kicker {
+            theme: root.theme;
+            text: root.hero.kicker;
         }
 
         // Its room ends 24 over the row.

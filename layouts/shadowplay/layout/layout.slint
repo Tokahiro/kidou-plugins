@@ -10,7 +10,7 @@ import {
     LayoutPlace,
 } from "kidou-layout-3.slint";
 import {
-    EmptyCard, Facts, HeroTitle, RowCover,
+    EmptyCard, Facts, HeroTitle, Kicker, RowCover,
 } from "kidou-layout-parts-3.slint";
 
 // The row's covers at the Kartengröße, the words' place and the lanes' arc, in canvas px.
@@ -165,29 +165,9 @@ export component Layout {
         height: self.preferred-height;
         spacing: 14 * root.u;
 
-        kicker := HorizontalLayout {
-            spacing: 14 * root.u;
-            alignment: start;
-
-            VerticalLayout {
-                alignment: center;
-
-                Rectangle {
-                    width: 28 * root.u;
-                    height: 2 * root.u;
-                    background: @linear-gradient(90deg, root.theme.accent 0%,
-                        root.theme.accent-label 100%);
-                }
-            }
-
-            Text {
-                text: root.hero.kicker.to-uppercase();
-                font-size: 18 * root.t;
-                font-weight: 600;
-                letter-spacing: self.font-size * 0.16;
-                color: root.theme.accent-label;
-                vertical-alignment: center;
-            }
+        kicker := Kicker {
+            theme: root.theme;
+            text: root.hero.kicker;
         }
 
         HeroTitle {

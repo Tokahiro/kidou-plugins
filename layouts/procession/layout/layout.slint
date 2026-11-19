@@ -8,7 +8,7 @@ import {
     LayoutCardSize, LayoutEmptyWords, LayoutHero, LayoutPlace, LayoutTheme, LayoutTile, LayoutZone,
 } from "kidou-layout-3.slint";
 import {
-    Cover, CoverShadow, EmptyCard, Facts, HeroTitle, Ring, RingStyle,
+    Cover, CoverShadow, EmptyCard, Facts, HeroTitle, Kicker, Ring, RingStyle, Shoulder,
 } from "kidou-layout-parts-3.slint";
 
 // The procession's places, in canvas px at a scale of 1: the stage cover 420 × 630 at the left
@@ -136,45 +136,6 @@ component ProcessionCover {
     @children
 }
 
-// A pill at an end of the tabs, LT or RT, which steps the tabs: fainter and wider than a hint's
-// pill, 8 further from the tabs than they stand from each other.
-component Shoulder inherits Rectangle {
-    in property <LayoutTheme> theme;
-    in property <string> letters;
-    in property <bool> leading;
-
-    property <length> u: root.theme.unit;
-    out property <length> pill-x: pill.x;
-    out property <length> pill-width: pill.width;
-
-    width: pill.width + 8 * root.u;
-    height: 46 * root.u;
-
-    pill := Rectangle {
-        x: root.leading ? 0px : 8 * root.u;
-        width: row.preferred-width;
-        height: 34 * root.u;
-        border-radius: 10 * root.u;
-        background: root.theme.white-08;
-
-        row := HorizontalLayout {
-            padding-left: 8 * root.u;
-            padding-right: 8 * root.u;
-
-            Text {
-                text: root.letters;
-                font-size: 18 * root.u * root.theme.text-scale;
-                font-weight: 700;
-                color: root.theme.text;
-                vertical-alignment: center;
-                accessible-role: none;
-            }
-        }
-    }
-
-    @children
-}
-
 // One tab: the current one on the tint of a current item, in its rim.
 component Tab inherits Rectangle {
     in property <LayoutTheme> theme;
@@ -202,35 +163,6 @@ component Tab inherits Rectangle {
     }
 
     @children
-}
-
-// A kicker's or a label's line: the accent's short dash before words in its small caps.
-component Label inherits HorizontalLayout {
-    in property <LayoutTheme> theme;
-    in property <string> text;
-    in property <length> size;
-
-    spacing: 14 * root.theme.unit;
-    alignment: start;
-
-    VerticalLayout {
-        alignment: center;
-
-        Rectangle {
-            width: 28 * root.theme.unit;
-            height: 2 * root.theme.unit;
-            background: @linear-gradient(90deg, root.theme.accent 0%, root.theme.accent-label 100%);
-        }
-    }
-
-    Text {
-        text: root.text.to-uppercase();
-        font-size: root.size;
-        font-weight: 600;
-        letter-spacing: self.font-size * 0.16;
-        color: root.theme.accent-label;
-        vertical-alignment: center;
-    }
 }
 
 export component Layout {
@@ -400,10 +332,9 @@ export component Layout {
         height: self.preferred-height;
         spacing: 14 * root.u;
 
-        kicker := Label {
+        kicker := Kicker {
             theme: root.theme;
             text: root.hero.kicker;
-            size: 18 * root.t;
         }
 
         HeroTitle {
@@ -422,7 +353,7 @@ export component Layout {
 
     // The line's label, 24 above its covers, while a game waits in it. Its place holds without
     // it, so that the words above keep the same room.
-    up-next := Label {
+    up-next := Kicker {
         visible: root.tiles.length > root.focused + 1;
         x: root.line-x;
         y: root.line-top - 24 * root.u - self.height;
