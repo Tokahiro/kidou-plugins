@@ -1,10 +1,10 @@
 id = "dreamscape"
 name = "Traumbild"
 badge = "DREAM"
-version = "1.2.0"
+version = "1.2.1"
 author = "Kidō"
 category = "layout"
-api = "3.0.0"
+api = "3.1.0"
 
 [layout]
 actions = "above"

@@ -9,7 +9,7 @@ import {
     LayoutPlace,
 } from "kidou-layout-3.slint";
 import {
-    Cover, CoverShadow, EmptyCard, Glass, GlassKind, HeroTitle, Ring, RingStyle,
+    Cover, CoverShadow, EmptyCard, Glass, GlassKind, HeroTitle, Kicker, Ring, RingStyle,
 } from "kidou-layout-parts-3.slint";
 
 // The carousel's places, in canvas px: the centre cover 360 × 540, its neighbours 260 × 390 and
@@ -253,29 +253,9 @@ export component Layout {
         height: self.preferred-height;
         spacing: 14 * root.u;
 
-        kicker := HorizontalLayout {
-            spacing: 14 * root.u;
-            alignment: start;
-
-            VerticalLayout {
-                alignment: center;
-
-                Rectangle {
-                    width: 28 * root.u;
-                    height: 2 * root.u;
-                    background: @linear-gradient(90deg, root.theme.accent 0%,
-                        root.theme.accent-label 100%);
-                }
-            }
-
-            Text {
-                text: root.hero.kicker.to-uppercase();
-                font-size: 18 * root.t;
-                font-weight: 600;
-                letter-spacing: self.font-size * 0.16;
-                color: root.theme.accent-label;
-                vertical-alignment: center;
-            }
+        kicker := Kicker {
+            theme: root.theme;
+            text: root.hero.kicker;
         }
 
         // Its room ends 24 over the first neighbour on the left, whose foot the arc lifts 40.
