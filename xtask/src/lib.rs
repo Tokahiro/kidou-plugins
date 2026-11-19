@@ -416,28 +416,19 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
 }
 
 /// What Kidō would refuse in the Home layouts under `root`, one line each: a file it does not
-/// take, an SVG it does not draw, a rule of the layout check, or one of Slint's errors.
-pub fn layouts(root: &Path) -> Result<Vec<String>, String> {
+/// take, an SVG it does not draw in its time, a rule of the layout check, or one of Slint's
+/// errors. `drawer` is this program, whose command `draw` draws an SVG.
+pub fn layouts(root: &Path, drawer: &Path) -> Result<Vec<String>, String> {
     let mut wrong = Vec::new();
     for source in sources(root)? {
         if source.category != "layout" {
             continue;
         }
-        let id = &source.id;
-        let read = Files::read(&source.folder.join(kidou_layout::FOLDER)).and_then(|mut files| {
-            files.draw(|_, svg| kidou_layout::draw_svg(svg).map_err(str::to_owned))?;
-            Ok(files)
-        });
-        let files = match read {
-            Ok(files) => files,
-            Err(why) => {
-                wrong.push(format!("{id}: {why}"));
-                continue;
-            }
-        };
-        let refused = kidou_layout::check(&files)
-            .and_then(|()| kidou_layout::compile(&files).map(|_| ()))
+        let refused = Files::read(&source.folder.join(kidou_layout::FOLDER))
+            .map_err(|why| vec![why])
+            .and_then(|files| kidou_layout::checked(files, drawer))
             .err();
+        let id = &source.id;
         wrong.extend((refused.into_iter().flatten()).map(|why| format!("{id}: {why}")));
     }
     Ok(wrong)

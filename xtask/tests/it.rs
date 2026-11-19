@@ -416,7 +416,8 @@ fn an_id_that_kidos_list_would_drop_is_refused() {
 #[test]
 fn layouts_names_each_layout_kidou_would_refuse() {
     let root = repository("layouts");
-    let wrong = layouts(&root).expect("a check");
+    let drawer = Path::new(env!("CARGO_BIN_EXE_xtask"));
+    let wrong = layouts(&root, drawer).expect("a check");
     assert!(!wrong.is_empty(), "a file with no `Layout` passed");
     assert!(
         wrong.iter().all(|line| line.starts_with("lamp: ")),
@@ -426,7 +427,11 @@ fn layouts_names_each_layout_kidou_would_refuse() {
     for file in ["layout.slint", "mark.svg"] {
         fs::copy(good.join(file), root.join("layouts/lamp/layout").join(file)).expect("a copy");
     }
-    assert_eq!(layouts(&root).expect("a check"), [""; 0]);
+    assert_eq!(layouts(&root, drawer).expect("a check"), [""; 0]);
+    // The SVG is drawn by the drawer, in a process of its own, and by nothing else.
+    let wrong = layouts(&root, Path::new("no-such-drawer")).expect("a check");
+    assert_eq!(wrong.len(), 1, "{wrong:?}");
+    assert!(wrong[0].contains("mark.svg: no-such-drawer: "), "{wrong:?}");
 }
 
 #[test]
