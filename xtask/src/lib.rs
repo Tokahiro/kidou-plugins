@@ -236,7 +236,7 @@ fn numbers(version: &str) -> Option<[u32; 3]> {
 }
 
 /// Adds the files and folders below `folder`'s `at`, a folder that is no link, to `files`, by
-/// name, each folder before what it holds.
+/// name, each folder before what it holds; a folder with no file below it is left out.
 fn walk(folder: &Path, at: &str, files: &mut Vec<(String, Option<Vec<u8>>)>) -> Result<(), String> {
     let path = folder.join(at);
     let unreadable = |why: std::io::Error| format!("{}: {why}", path.display());
@@ -262,7 +262,11 @@ fn walk(folder: &Path, at: &str, files: &mut Vec<(String, Option<Vec<u8>>)>) -> 
         let file = folder.join(&inner);
         if kind.is_dir() {
             files.push((inner.clone(), None));
+            let held = files.len();
             walk(folder, &inner, files)?;
+            if files.len() == held {
+                files.pop();
+            }
         } else if kind.is_file() {
             let bytes = fs::read(&file).map_err(|why| format!("{}: {why}", file.display()))?;
             files.push((inner, Some(bytes)));
