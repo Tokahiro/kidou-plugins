@@ -12,5 +12,8 @@ sha2 = "0.11"
 tar = { version = "0.4.46", default-features = false }
 toml_edit = "0.25"
 
+[dev-dependencies]
+wit-parser = "0.247"
+
 [lints]
 workspace = true
