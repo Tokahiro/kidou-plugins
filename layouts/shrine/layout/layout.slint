@@ -224,9 +224,16 @@ export component Layout {
                 overflow: elide;
             }
 
-            Facts {
-                theme: root.theme;
-                facts: root.hero.fact-list;
+            // The facts run on past the words' column, to the content's right edge.
+            Rectangle {
+                height: row.preferred-height;
+
+                row := Facts {
+                    x: 0;
+                    width: root.width - root.theme.content-left - root.theme.content-right;
+                    theme: root.theme;
+                    facts: root.hero.fact-list;
+                }
             }
         }
     }
