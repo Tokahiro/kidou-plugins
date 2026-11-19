@@ -262,7 +262,8 @@ The compiler, the dependencies and the release profile are fixed here, so the sa
 A new compiler or dependency can change the component, and CI then asks for a new version of the plugin.
 A component holds the paths of its source files as the build's system writes them, so compare a listed plugin with code on Linux, as CI does.
 It also runs the check Kidō runs on a Home layout at the install, from [`crates/layout/`](crates/layout), which is the code Kidō itself builds.
-Kidō's check of the manifest isn't part of it, nor the time and memory limits Kidō sets for drawing an SVG, so install a new plugin with `kidouplug` once before you open the pull request.
+An SVG gets the time Kidō gives it there: 10 seconds, and 60 seconds for all of a layout's SVGs.
+Kidō's check of the manifest isn't part of it, nor the memory limit Kidō sets for drawing an SVG on Windows, so install a new plugin with `kidouplug` once before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 

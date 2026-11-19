@@ -2,7 +2,7 @@
 //!
 //! A layout package holds a folder [`FOLDER`] whose [`ROOT`] exports `Layout`, the root
 //! [`CONTRACT`] names. [`Files::read`] reads that folder into memory once; `kidouplug` draws
-//! each SVG of it as a PNG ([`draw_svg`]), runs [`check`] and [`compile`] on that copy, installs
+//! each SVG of it as a PNG and runs [`check`] and [`compile`] on that copy ([`checked`]), installs
 //! the drawn PNGs in the folder [`DRAWN`] and writes a [`Record`] of both; Home reads them again
 //! ([`Files::installed`]), compares them with the record and compiles that copy, so Home never
 //! reads an SVG. The record covers [`FOLDER`] and [`DRAWN`] only, as Home reads no other file
@@ -12,6 +12,7 @@
 
 mod check;
 mod compile;
+mod draw;
 mod embed;
 mod files;
 mod record;
@@ -19,6 +20,7 @@ mod source;
 
 pub use check::{ANIMATION_MAX_MS, PIXELS_MAX, check};
 pub use compile::{Refused, compile, load};
+pub use draw::{MEMORY_MAX, TIME_MAX, TOTAL_TIME_MAX, checked, draw};
 pub use embed::{
     CardSize, Embedded, EmptyWords, Fact, Given, Hero, Place, Placed, Theme, Tile, TitleLength,
     Zone,

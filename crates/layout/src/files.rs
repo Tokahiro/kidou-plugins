@@ -306,8 +306,7 @@ pub(crate) fn shown<'a>(name: &str, files: &'a Files) -> Result<Shown<'a>, Strin
 /// The SVG `bytes` drawn by Slint's SVG reader as a PNG, at twice its own size and at most
 /// [`IMAGE_SIDE_MAX`] at a side, or why it is refused: no UTF-8 XML, a DTD, an `image` or
 /// `feImage`, or an `href` to anything but a part of the same file, as Slint's SVG reader (usvg)
-/// would read a file from the disk. `kidouplug` runs it in a process of its own, within a time
-/// and a memory limit, as other SVGs can draw for minutes or ask for gigabytes.
+/// would read a file from the disk. [`checked`](crate::checked) runs it in a process of its own.
 pub fn draw_svg(bytes: &[u8]) -> Result<Vec<u8>, &'static str> {
     use i_slint_core::graphics::{Image, IntSize, image_to_rgba8_with_target_size};
 
