@@ -4584,6 +4584,7 @@ dependencies = [
  "sha2",
  "tar",
  "toml_edit",
+ "wit-parser",
 ]
 
 [[package]]

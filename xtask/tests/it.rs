@@ -391,3 +391,27 @@ fn layouts_names_each_layout_kidou_would_refuse() {
     }
     assert_eq!(layouts(&root).expect("a check"), [""; 0]);
 }
+
+#[test]
+fn the_interfaces_parse() {
+    let wit = Path::new(env!("CARGO_MANIFEST_DIR")).join("../wit");
+    let mut resolve = wit_parser::Resolve::default();
+    // The folder itself is `kidou:store` with `deps/host`; a package comes after those it uses.
+    let folders = ["events", "device", "source"];
+    resolve.push_dir(&wit).expect("store.wit and deps/host");
+    for folder in folders {
+        resolve.push_dir(wit.join(folder)).expect(folder);
+    }
+    let mut found: Vec<String> = fs::read_dir(&wit)
+        .expect("the folder")
+        .map(|entry| {
+            entry
+                .expect("an entry")
+                .file_name()
+                .into_string()
+                .expect("a name")
+        })
+        .collect();
+    found.sort();
+    assert_eq!(found, ["deps", "device", "events", "source", "store.wit"]);
+}
