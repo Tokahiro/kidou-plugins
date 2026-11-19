@@ -2,9 +2,10 @@
 //! and what `check` finds.
 
 use std::fs;
+use std::io::Read as _;
 use std::path::{Path, PathBuf};
 
-use xtask::{MAX_ENTRIES, PACKAGES, check, layouts, pack_new, sha256, sources};
+use xtask::{MAX_ENTRIES, PACKAGES, check, layouts, pack_new, sha256, sources, unlisted};
 
 const LIST: &str = r#"# The list.
 
@@ -29,6 +30,7 @@ fn repository(name: &str) -> PathBuf {
     let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(root.join("layouts/lamp/layout")).expect("the source's folder");
+    fs::create_dir_all(root.join("devices")).expect("the devices' folder");
     fs::create_dir_all(root.join("packages")).expect("the packages' folder");
     fs::write(root.join("index.toml"), LIST).expect("the list");
     fs::write(root.join("layouts/lamp/plugin.toml"), manifest("1.0.0")).expect("the manifest");
@@ -114,13 +116,13 @@ fn check_names_what_differs() {
             "lamp: packages/lamp-1.0.0.kidouplug: ",
         ),
         (
-            "not-listed",
+            "not-listed-does-not-pack",
             |root| {
-                fs::create_dir_all(root.join("layouts/moth/layout")).unwrap();
+                fs::create_dir_all(root.join("layouts/moth")).unwrap();
                 let manifest = manifest("1.0.0").replace("lamp", "moth");
                 fs::write(root.join("layouts/moth/plugin.toml"), manifest).unwrap();
             },
-            "moth: the list has no [[plugin]] of this id",
+            "moth/layout: ",
         ),
         (
             "pack-names-unknown",
@@ -202,6 +204,107 @@ fn a_source_whose_version_has_no_package_yet_passes_the_check() {
     let root = packed("pending");
     fs::write(root.join("layouts/lamp/plugin.toml"), manifest("1.1.0")).expect("the manifest");
     assert_eq!(check(&root).expect("a check"), [""; 0]);
+}
+
+#[test]
+fn a_source_the_list_does_not_name_is_checked_and_not_packed() {
+    let root = packed("unlisted");
+    fs::create_dir_all(root.join("layouts/moth/layout")).expect("the source's folder");
+    let manifest = manifest("1.0.0").replace("lamp", "moth");
+    fs::write(root.join("layouts/moth/plugin.toml"), manifest).expect("the manifest");
+    let list = fs::read(root.join("index.toml")).expect("the list");
+    assert_eq!(check(&root).expect("a check"), [""; 0]);
+    assert_eq!(unlisted(&root).expect("the sources"), ["moth"]);
+    assert_eq!(pack_new(&root).expect("a pack"), [""; 0]);
+    assert!(!root.join("packages/moth-1.0.0.kidouplug").exists());
+    assert_eq!(fs::read(root.join("index.toml")).expect("the list"), list);
+}
+
+/// A repository named `name` whose one source is the device plugin `lantern` 1.0.0, a crate of
+/// its own workspace with no dependency, listed and not yet packed.
+fn code_repository(name: &str) -> PathBuf {
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = fs::remove_dir_all(&root);
+    let plugin = root.join("devices/lantern");
+    fs::create_dir_all(plugin.join("src")).expect("the source's folder");
+    fs::create_dir_all(root.join("layouts")).expect("the layouts' folder");
+    fs::create_dir_all(root.join("packages")).expect("the packages' folder");
+    for (file, text) in [
+        (
+            "index.toml",
+            "[[plugin]]\nid = \"lantern\"\nname = \"Laterne\"\ncategory = \"device\"\n",
+        ),
+        (
+            "Cargo.toml",
+            "[workspace]\nresolver = \"3\"\nmembers = [\"devices/*\"]\n",
+        ),
+        (
+            "Cargo.lock",
+            "version = 4\n\n[[package]]\nname = \"plugin-lantern\"\nversion = \"0.0.0\"\n",
+        ),
+        (
+            "devices/lantern/plugin.toml",
+            "id = \"lantern\"\nversion = \"1.0.0\"\ncategory = \"device\"\n",
+        ),
+        (
+            "devices/lantern/Cargo.toml",
+            "[package]\nname = \"plugin-lantern\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
+             [lib]\ncrate-type = [\"cdylib\"]\n",
+        ),
+        (
+            "devices/lantern/src/lib.rs",
+            "#[unsafe(no_mangle)]\npub extern \"C\" fn lit(wicks: u32) -> u32 {\n    \
+             wicks.checked_add(1).expect(\"a wick more\")\n}\n",
+        ),
+    ] {
+        fs::write(root.join(file), text).expect("a file of the repository");
+    }
+    root
+}
+
+#[test]
+fn a_plugin_with_code_is_built_and_packed_to_the_same_bytes_in_any_folder() {
+    let root = code_repository("code");
+    assert_eq!(check(&root).expect("a check"), [""; 0]);
+    assert_eq!(pack_new(&root).expect("a pack"), ["lantern 1.0.0"]);
+    let package = fs::read(root.join("packages/lantern-1.0.0.kidouplug")).expect("the package");
+    let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(&package[..]));
+    let files: Vec<(String, Vec<u8>)> = (archive.entries().expect("the entries"))
+        .map(|entry| {
+            let mut entry = entry.expect("an entry");
+            let mut bytes = Vec::new();
+            entry.read_to_end(&mut bytes).expect("its bytes");
+            (entry.path().expect("a name").display().to_string(), bytes)
+        })
+        .collect();
+    let names: Vec<&str> = files.iter().map(|(name, _)| name.as_str()).collect();
+    assert_eq!(names, ["plugin.toml", "plugin.wasm"]);
+    assert!(files[1].1.starts_with(b"\0asm"), "no WebAssembly");
+    assert_eq!(check(&root).expect("a check"), [""; 0]);
+
+    let elsewhere = code_repository("code-in-another-folder");
+    let source = sources(&elsewhere).expect("the sources").remove(0);
+    assert_eq!(source.pack().expect("a pack"), package);
+
+    fs::write(
+        root.join("devices/lantern/src/lib.rs"),
+        "#[unsafe(no_mangle)]\npub extern \"C\" fn lit(wicks: u32) -> u32 {\n    wicks\n}\n",
+    )
+    .expect("other code");
+    let wrong = check(&root).expect("a check");
+    assert!(
+        wrong[0].starts_with("lantern: the source differs from packages/lantern-1.0.0.kidouplug"),
+        "{wrong:?}"
+    );
+}
+
+#[test]
+fn a_plugin_whose_code_does_not_build_does_not_pack() {
+    let root = code_repository("code-broken");
+    fs::write(root.join("devices/lantern/src/lib.rs"), "fn lit(").expect("broken code");
+    let wrong = check(&root).expect("a check");
+    assert_eq!(wrong, ["lantern: cargo could not build `plugin-lantern`"]);
+    pack_new(&root).expect_err("a refusal");
 }
 
 #[test]

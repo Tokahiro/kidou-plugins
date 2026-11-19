@@ -230,19 +230,23 @@ packages/        every listed package; a file here never changes
 xtask/           the check and the packer that CI runs
 ```
 
-To change a layout:
+To change a plugin:
 
-1. Change its source under `layouts/<id>/`.
+1. Change its source under `layouts/<id>/` or `devices/<id>/`.
 2. Raise `version` in its `plugin.toml`. Leave `index.toml` and `packages/` alone.
 3. Open a pull request.
 
 CI checks that the list, the packages and the sources fit each other, and that the source packs.
+For a plugin with code it first builds the component, `plugin.wasm`, for `wasm32-wasip2`.
+The compiler, the dependencies and the release profile are fixed here, so the same source gives the same package.
+A new compiler or dependency can change the component, and CI then asks for a new version of the plugin.
 It also runs the check Kidō runs on a Home layout at the install, from [`crates/layout/`](crates/layout), which is the code Kidō itself builds.
 Kidō's check of the manifest isn't part of it, nor the time and memory limits Kidō sets for drawing an SVG, so install a new plugin with `kidouplug` once before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.
 Players get it the next time they open "Add plugins".
 
 A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `package` and `sha256`.
+Until it has that entry, CI checks and builds the source, and writes no package.
 
 Run the same check yourself with a Rust toolchain. It builds Slint's compiler, which on Linux needs fontconfig's development files (`libfontconfig-dev`):
 

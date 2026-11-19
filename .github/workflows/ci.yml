@@ -43,6 +43,7 @@ jobs:
       # A plugin with code is empty on any other target.
       - run: cargo clippy --locked --target wasm32-wasip2 -p kidou-plugin-onexconsole -- -D warnings
       - run: cargo test --locked
+      # Also builds each plugin with code for wasm32-wasip2, as the pack job packs it.
       - run: cargo xtask check
 
   # Packs each plugin whose source has a new version. It packs main as it is now, so a run that

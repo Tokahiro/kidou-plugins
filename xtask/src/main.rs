@@ -3,9 +3,9 @@ use std::process::ExitCode;
 
 const USAGE: &str = "\
 USAGE:
-    cargo xtask check    Hold the list, the packages and the sources to each other, and
-                         run Kidō's check on each Home layout
-    cargo xtask pack     Pack each source whose version has no package yet, and list it
+    cargo xtask check    Hold the list, the packages and the sources to each other, build
+                         each plugin with code, and run Kidō's check on each Home layout
+    cargo xtask pack     Pack each listed source whose version has no package yet, and list it
 ";
 
 fn main() -> ExitCode {
@@ -13,6 +13,9 @@ fn main() -> ExitCode {
     let done = match std::env::args().nth(1).as_deref() {
         Some("check") => xtask::check(&root).and_then(|mut wrong| {
             wrong.extend(xtask::layouts(&root)?);
+            for id in xtask::unlisted(&root)? {
+                eprintln!("{id}: not on the list, so not offered and not packed");
+            }
             if wrong.is_empty() {
                 Ok(Vec::new())
             } else {
