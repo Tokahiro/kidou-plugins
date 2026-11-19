@@ -9,8 +9,8 @@ use std::io;
 use std::pin::Pin;
 use std::rc::Rc;
 
-use i_slint_compiler::CompilerConfiguration;
 use i_slint_compiler::source_path::SourcePath;
+use i_slint_compiler::{CompilerConfiguration, ExperimentalFeatures};
 use url::Url;
 
 use base64::Engine;
@@ -57,7 +57,8 @@ pub(crate) fn configure(
     config.include_paths.clear();
     config.library_paths.clear();
     config.style = Some("fluent".into());
-    config.enable_experimental = false;
+    config.experimental_features = ExperimentalFeatures::default();
+    config.unknown_experimental_features.clear();
     let texts = files.clone();
     config.open_import_callback = Some(Rc::new(move |path: SourcePath| {
         let loaded = match &path {
