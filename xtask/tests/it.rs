@@ -236,3 +236,21 @@ fn a_manifest_that_does_not_fit_its_folder_is_refused() {
         assert!(refused.ends_with(why), "{refused}");
     }
 }
+
+#[test]
+fn an_id_that_kidos_list_would_drop_is_refused() {
+    for id in [
+        "my-lamp",
+        "Lamp",
+        "lamp.one",
+        "a_lamp_of_seventeen",
+        "1lamp",
+    ] {
+        let root = repository(&format!("id-{id}"));
+        fs::rename(root.join("layouts/lamp"), root.join("layouts").join(id)).expect("the folder");
+        let manifest = manifest("1.0.0").replace("id = \"lamp\"", &format!("id = \"{id}\""));
+        fs::write(root.join("layouts").join(id).join("plugin.toml"), manifest).expect("a manifest");
+        let refused = check(&root).expect_err("a refusal");
+        assert!(refused.contains("is no id of Kidō's"), "{id}: {refused}");
+    }
+}

@@ -30,6 +30,9 @@ pub const MAX_UNPACKED: usize = 128 << 20;
 /// The most bytes of a manifest Kidō reads.
 pub const MAX_MANIFEST: usize = 64 << 10;
 
+/// The longest id Kidō's list takes.
+pub const ID_MAX: usize = 16;
+
 const LIST: &str = "index.toml";
 const MANIFEST: &str = "plugin.toml";
 
@@ -93,7 +96,7 @@ impl Source {
 }
 
 /// Each plugin with its source under `root`, by category and id; refuses a manifest whose id is
-/// not its folder's name or no name a package may hold, whose category is not its folder's, or
+/// not its folder's name or none Kidō's list takes, whose category is not its folder's, or
 /// whose version is not three numbers.
 pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
     let mut found = Vec::new();
@@ -117,8 +120,21 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
                     .ok_or_else(|| format!("{}: no `{key}`", at.display()))
             };
             let (id, version) = (word("id")?, word("version")?);
-            if folder.file_name().and_then(|name| name.to_str()) != Some(&id) || !fit(&id) {
+            if folder.file_name().and_then(|name| name.to_str()) != Some(&id) {
                 return Err(format!("{}: the folder is not named `{id}`", at.display()));
+            }
+            let rest =
+                |byte: u8| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_';
+            if !(id.starts_with(|first: char| first.is_ascii_lowercase())
+                && id.bytes().all(rest)
+                && id.len() <= ID_MAX
+                && fit(&id))
+            {
+                return Err(format!(
+                    "{}: `{id}` is no id of Kidō's: a lowercase letter, then lowercase letters, \
+                     digits and `_`, at most {ID_MAX} in all",
+                    at.display()
+                ));
             }
             if word("category")? != category {
                 return Err(format!("{}: no `{category}` plugin", at.display()));
@@ -220,7 +236,7 @@ pub fn sha256(bytes: &[u8]) -> String {
 /// that is missing, has another SHA-256 or another address than its id and version give; a
 /// source the list does not name, or that does not pack; a source that changed under a version
 /// already packed; a new version that is not later than the listed one; and a pack that names a
-/// plugin the list does not offer. A new plugin's entry names no `version` until `pack` lists it.
+/// plugin the list does not offer yet. A new plugin's entry names no `version` until `pack` lists it.
 pub fn check(root: &Path) -> Result<Vec<String>, String> {
     let list = read(&root.join(LIST))?;
     let sources = sources(root)?;
@@ -288,7 +304,10 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
         let name = pack.get("id").and_then(|item| item.as_str()).unwrap_or("");
         let ids = pack.get("plugins").and_then(|item| item.as_array());
         for id in ids.into_iter().flatten().filter_map(|id| id.as_str()) {
-            if !listed.iter().any(|(listed, ..)| *listed == id) {
+            let offered = |(listed, version, _): &(&str, Option<&str>, &str)| {
+                *listed == id && version.is_some()
+            };
+            if !listed.iter().any(offered) {
                 wrong.push(format!("pack {name}: the list offers no plugin `{id}`"));
             }
         }

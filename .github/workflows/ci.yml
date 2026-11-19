@@ -31,16 +31,17 @@ jobs:
       - run: cargo test --locked
       - run: cargo xtask check
 
-  # Packs each plugin whose source has a new version, and lists the package. It packs main as it
-  # is now, one run at a time, so a run that waited packs what the runs before it left.
+  # Packs each plugin whose source has a new version. It packs main as it is now, so a run that
+  # waited packs what the runs before it left. This job runs cargo and cannot write.
   pack:
     if: github.event_name == 'push'
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      contents: write
     concurrency: pack
+    outputs:
+      packed: ${{ steps.pack.outputs.packed }}
+      commit: ${{ steps.pack.outputs.commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,15 +53,37 @@ jobs:
           cargo xtask check
           packed=$(cargo xtask pack)
           echo "packed=$(printf '%s' "$packed" | paste -sd, - | sed 's/,/, /g')" >> "$GITHUB_OUTPUT"
-      # The token is given to this step alone: the step above runs cargo's build scripts.
-      - name: List them
-        if: steps.pack.outputs.packed != ''
-        env:
-          PACKED: ${{ steps.pack.outputs.packed }}
-          TOKEN: ${{ github.token }}
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - if: steps.pack.outputs.packed != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: packed
+          path: |
+            index.toml
+            packages/
+          retention-days: 1
+
+  # Lists what the pack job wrote, on the commit it packed: this job can write and runs no
+  # code of the repository. Where main moved meanwhile, its push fails and the next run packs.
+  list:
+    if: needs.pack.outputs.packed != ''
+    needs: pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pack.outputs.commit }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packed
+      - env:
+          PACKED: ${{ needs.pack.outputs.packed }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.toml packages
           git commit -m "Pack $PACKED"
-          git push "https://x-access-token:$TOKEN@github.com/$GITHUB_REPOSITORY" HEAD:main
+          git push origin HEAD:main
