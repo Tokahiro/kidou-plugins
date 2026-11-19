@@ -1,0 +1,50 @@
+// What every code plugin imports from Kidō. Paths are strings, an `at` is a time in seconds
+// since 1970-01-01 00:00 UTC, and a day a local calendar day counted from 1970-01-01. On
+// Windows a drive path is `/C/Games/X` in both directions, as WASI reads it, and so is a
+// registry text value that starts with one.
+package kidou:host@1.0.0;
+
+/// The registry keys and folders the plugin's grants allow, and Windows' answers.
+interface host {
+    enum hive { current-user, local-machine }
+
+    enum known { program-data, local-app-data, windows, data, stores, captures }
+
+    variant host-error { denied, wrong-type, failed(string) }
+
+    %string: func(hive: hive, key: string, value: string) -> result<option<string>, host-error>;
+    dword: func(hive: hive, key: string, value: string) -> result<option<u32>, host-error>;
+    values: func(hive: hive, key: string) -> result<list<tuple<string, string>>, host-error>;
+    subkeys: func(hive: hive, key: string) -> result<list<string>, host-error>;
+    known-folder: func(folder: known) -> option<string>;
+    local-day: func(at: s64) -> option<s32>;
+    free-bytes: func(folder: string) -> option<u64>;
+}
+
+/// The host's SQLite, read-only, on the files the plugin's grants allow.
+interface sqlite {
+    variant value { null, integer(s64), real(f64), text(string), blob(list<u8>) }
+    record error { code: s32, message: string }
+    enum access { shared, immutable }
+
+    resource database {
+        open: static func(path: string, access: access) -> result<database, error>;
+        execute: func(sql: string) -> result<_, error>;
+        query: func(sql: string, values: list<value>) -> result<list<list<value>>, error>;
+    }
+
+    version: func() -> string;
+}
+
+/// HTTPS GETs, only to the hosts the plugin's grants name for its network (`[grants] network`).
+/// A redirect is answered as it came, never followed: the plugin asks again where it points, and
+/// its grants decide again.
+interface http {
+    record response { status: u16, headers: list<tuple<string, string>>, body: list<u8> }
+
+    /// `denied`: the address is no `https` address of a granted host, or a header is one Kidō
+    /// sets itself. `too-large`: the body is longer than Kidō reads. `unreachable`: no network.
+    variant http-error { denied, too-large, unreachable(string), failed(string) }
+
+    get: func(url: string, headers: list<tuple<string, string>>) -> result<response, http-error>;
+}

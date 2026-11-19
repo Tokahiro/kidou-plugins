@@ -1,0 +1,29 @@
+// A device plugin, on the host's imports of `kidou:host` (../deps/host) and the tile types of
+// `kidou:events` (../events). Kidō loads it only on a device its manifest matches; its settings
+// rows and tiles are data in its manifest, which Kidō draws.
+package kidou:device@1.0.0;
+
+interface handler {
+    use kidou:events/types@1.0.0.{language, setting, pressed};
+
+    /// What a call knows: each folder of the plugin's grants as its manifest writes it, and its
+    /// path as Kidō resolved it (a known folder Kidō cannot name is left out); the player's
+    /// language; and the plugin's settings.
+    record context {
+        folders: list<tuple<string, string>>,
+        language: language,
+        settings: list<setting>,
+    }
+
+    /// The state line of each of its tiles now, by the tile's key.
+    states: func(context: context) -> list<tuple<string, string>>;
+
+    /// The player pressed the tile `tile` of the quick menu.
+    press: func(tile: string, context: context) -> pressed;
+}
+
+world device {
+    import kidou:host/host@1.0.0;
+    import kidou:host/sqlite@1.0.0;
+    export handler;
+}
