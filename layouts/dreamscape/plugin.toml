@@ -1,0 +1,14 @@
+id = "dreamscape"
+name = "Traumbild"
+badge = "DREAM"
+version = "1.2.0"
+author = "Kidō"
+category = "layout"
+api = "3.0.0"
+
+[layout]
+actions = "above"
+tabs = "none"
+frame = "switcher"
+art = "square"
+scroll = "row"

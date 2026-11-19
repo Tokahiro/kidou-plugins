@@ -1,0 +1,12 @@
+[package]
+name = "xtask"
+description = "Checks Kidō's plugin list against the sources and packs each new version."
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+flate2 = "1.1.10"
+sha2 = "0.11"
+tar = { version = "0.4.46", default-features = false }
+toml_edit = "0.25"
