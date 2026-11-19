@@ -1,0 +1,343 @@
+// Startseite Mondlicht as a layout plugin: the focused game's 2:3 cover lifted in the middle of a
+// still carousel, its name in a pill under it, its neighbours either side in an arc, smaller,
+// fainter and raised the further out they stand; the kicker, the title and the facts at the top
+// left, Home's capsules under them. The centre place stays fixed and the covers slide through it, so
+// the focus never travels across the screen.
+
+import {
+    LayoutCardSize, LayoutTile, LayoutHero, LayoutEmptyWords, LayoutTheme, LayoutZone,
+    LayoutPlace,
+} from "kidou-layout-3.slint";
+import {
+    Cover, CoverShadow, EmptyCard, Glass, GlassKind, HeroTitle, Ring, RingStyle,
+} from "kidou-layout-parts-3.slint";
+
+// The carousel's places, in canvas px: the centre cover 360 × 540, its neighbours 260 × 390 and
+// 40 apart, times the Kartengröße's `scale`.
+global Sizes {
+    out property <float> width: 360;
+    out property <float> height: 540;
+    out property <float> side-width: 260;
+    out property <float> side-height: 390;
+    out property <float> gap: 40;
+    // The centre cover's foot above the canvas's bottom, and the neighbours' resting foot, 40
+    // above Home's hint band, which `lift` raises on a television.
+    out property <float> foot: 244;
+    out property <float> side-foot: 114;
+
+    // The Kartengröße's factor of the sizes.
+    public pure function scale(cards: LayoutCardSize) -> float {
+        return cards == LayoutCardSize.normal ? 0.85 : cards == LayoutCardSize.very-large ? 1.1 : 1;
+    }
+
+    // The size of the arc's place `step` out from the middle, against a whole neighbour's.
+    public pure function arc-scale(step: int) -> float {
+        return step <= 1 ? 0.92 : step == 2 ? 0.8 : max(0.6, 0.8 - 0.1 * (step - 2));
+    }
+    public pure function arc-opacity(step: int) -> float {
+        return step <= 1 ? 1 : step == 2 ? 0.6 : 0.4;
+    }
+    // How far the place's foot is raised over the neighbours' resting foot.
+    public pure function arc-lift(step: int) -> float {
+        return step <= 1 ? 40 : 80 + 30 * (step - 2);
+    }
+
+    // Place `step` from the middle, 0 the centre cover: the distance of its middle from the
+    // canvas's middle, its width and its height at a scale of 1, and its foot above the canvas's
+    // bottom.
+    public pure function middle(step: int) -> float {
+        return step == 0 ? 0
+            : self.width / 2 + self.gap + self.side-width / 2
+                + (step - 1) * (self.side-width + self.gap);
+    }
+    public pure function place-width(step: int) -> float {
+        return step == 0 ? self.width : self.side-width * self.arc-scale(step);
+    }
+    public pure function place-height(step: int) -> float {
+        return step == 0 ? self.height : self.side-height * self.arc-scale(step);
+    }
+    public pure function place-foot(step: int, lift: float) -> float {
+        return step == 0 ? self.foot : self.side-foot + lift + self.arc-lift(step);
+    }
+
+    // The whole places either side on a canvas `canvas` px wide with margins of `margin`.
+    public pure function shown(canvas: float, margin: float, scale: float) -> int {
+        return max(1, floor((canvas / 2 - (self.width / 2 - self.gap) * scale - margin)
+            / ((self.side-width + self.gap) * scale)));
+    }
+}
+
+// A cover of the carousel at `offset` places from the middle, a fraction while the deck slides;
+// focused, it lifts and takes the cover ring.
+component MoonCover {
+    in property <LayoutTheme> theme;
+    in property <LayoutTile> tile;
+    in property <float> offset;
+    // The whole places either side, past which a cover fades out.
+    in property <int> shown;
+    in property <bool> focused;
+    in property <bool> selected;
+    // The focused game's cover at the size of a stage cover.
+    in property <image> stage;
+    // The carousel's area, whose middle the centre place stands on.
+    in property <length> area-width;
+    in property <length> area-height;
+
+    property <length> u: root.theme.unit;
+    property <float> far: abs(root.offset);
+    property <int> step: floor(root.far);
+    property <float> part: root.far - root.step;
+    property <float> side: root.offset < 0 ? -1 : 1;
+    property <float> scale: Sizes.scale(root.theme.cards);
+    property <float> safe: root.theme.safe-lift / root.u;
+    property <float> middle: (Sizes.middle(root.step)
+        + (Sizes.middle(root.step + 1) - Sizes.middle(root.step)) * root.part) * root.scale;
+    property <float> wide: (Sizes.place-width(root.step)
+        + (Sizes.place-width(root.step + 1) - Sizes.place-width(root.step)) * root.part)
+        * root.scale;
+    property <float> tall: (Sizes.place-height(root.step)
+        + (Sizes.place-height(root.step + 1) - Sizes.place-height(root.step)) * root.part)
+        * root.scale;
+    property <float> foot: Sizes.place-foot(root.step, root.safe)
+        + (Sizes.place-foot(root.step + 1, root.safe) - Sizes.place-foot(root.step, root.safe))
+            * root.part;
+    property <float> faint: root.step == 0
+        ? 1 - (1 - Sizes.arc-opacity(1)) * root.part
+        : Sizes.arc-opacity(root.step)
+            + (Sizes.arc-opacity(root.step + 1) - Sizes.arc-opacity(root.step)) * root.part;
+    // Past the last whole place, it fades out over one place's slide.
+    property <float> leaving: clamp(root.shown + 1 - root.far, 0, 1);
+    property <length> lift: root.focused && !root.theme.reduced-motion
+        ? root.theme.focus-lift-cover : 0;
+    property <length> radius: root.theme.radius-cover;
+
+    animate lift {
+        duration: 130ms;
+        easing: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    visible: root.leaving > 0;
+    opacity: root.faint * root.leaving;
+    x: root.area-width / 2 + (root.side * root.middle - root.wide / 2) * root.u;
+    y: root.area-height - (root.foot + root.tall) * root.u + root.lift;
+    width: root.wide * root.u;
+    height: root.tall * root.u;
+
+    CoverShadow {
+        theme: root.theme;
+        radius: root.radius;
+        focused: root.focused;
+    }
+
+    Ring {
+        width: 100%;
+        height: 100%;
+        theme: root.theme;
+        style: RingStyle.cover;
+        shown: root.focused;
+        radius: root.radius;
+    }
+
+    Cover {
+        theme: root.theme;
+        art: root.selected && root.stage.width > 1 ? root.stage : root.tile.art;
+        missing: root.tile.missing;
+        shows-title: root.tile.shows-title;
+        title-length: root.tile.title-length;
+        icon: root.tile.icon;
+        tint: root.tile.tint;
+        title: root.tile.title;
+        badge: root.selected ? root.tile.badge : "";
+        running: root.tile.running;
+        gloss: !root.focused;
+        radius: root.radius;
+    }
+
+    @children
+}
+
+export component Layout {
+    in property <[LayoutTile]> tiles;
+    in property <int> focused;
+    in property <LayoutZone> zone;
+    in property <image> stage;
+    in property <LayoutHero> hero;
+    in property <bool> empty;
+    in property <LayoutEmptyWords> empty-words;
+    in property <[string]> tabs;
+    in property <int> tab;
+    in property <LayoutTheme> theme;
+    // Home's capsules, 14 under the facts.
+    out property <length> actions-x: root.theme.content-left;
+    out property <length> actions-y: words.y + words.height + 14 * root.u;
+    // The centre cover.
+    out property <LayoutPlace> focused-place: {
+        x: (root.width - Sizes.width * root.scale * root.u) / 2,
+        y: root.centre-top,
+        width: Sizes.width * root.scale * root.u,
+        height: Sizes.height * root.scale * root.u,
+        radius: root.theme.radius-cover,
+    };
+    callback activated(int);
+    callback tab-tapped(int);
+
+    property <length> u: root.theme.unit;
+    // The height of Home's row of capsules.
+    property <length> actions-height: (8 + 72 * root.theme.text-scale) * root.u;
+    property <length> t: root.u * root.theme.text-scale;
+    property <bool> in-row: root.zone == LayoutZone.row;
+    property <float> scale: Sizes.scale(root.theme.cards);
+    property <int> shown: Sizes.shown(root.width / root.u, root.theme.canvas-margin / root.u,
+        root.scale);
+    // The centre cover's foot and top.
+    property <length> centre-bottom: root.height - Sizes.foot * root.u;
+    property <length> centre-top: root.centre-bottom - Sizes.height * root.scale * root.u;
+
+    // Its middle on the centre cover's.
+    if root.empty: EmptyCard {
+        x: (root.width - self.width) / 2;
+        y: (root.centre-top + root.centre-bottom - self.height) / 2;
+        theme: root.theme;
+        words: root.empty-words;
+        focused: root.in-row;
+
+        // Home scans for stores again.
+        TouchArea {
+            clicked => {
+                root.activated(0);
+            }
+        }
+    }
+
+    if !root.empty: Rectangle {
+        // The place in the deck the middle holds, which slides as the focus moves.
+        property <float> slid: root.focused;
+        property <float> scroll: root.theme.reduced-motion ? root.focused : self.slid;
+
+        animate slid {
+            duration: 300ms;
+            easing: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        y: root.centre-top - 40 * root.u;
+        width: 100%;
+        height: root.height - self.y;
+
+        for tile[index] in root.tiles: MoonCover {
+            theme: root.theme;
+            tile: tile;
+            offset: index - parent.scroll;
+            shown: root.shown;
+            selected: index == root.focused;
+            focused: root.in-row && index == root.focused;
+            stage: root.stage;
+            area-width: parent.width;
+            area-height: parent.height;
+
+            TouchArea {
+                clicked => {
+                    root.activated(index);
+                }
+            }
+        }
+    }
+
+    // The game's words at the top left under the page switcher, never closer than 40 to the
+    // centre cover.
+    words := VerticalLayout {
+        visible: root.hero.shown;
+        x: root.theme.content-left;
+        y: root.theme.under-switcher;
+        width: min(640 * root.u,
+            (root.width - Sizes.width * root.scale * root.u) / 2 - root.theme.content-left - 40 * root.u);
+        height: self.preferred-height;
+        spacing: 14 * root.u;
+
+        kicker := HorizontalLayout {
+            spacing: 14 * root.u;
+            alignment: start;
+
+            VerticalLayout {
+                alignment: center;
+
+                Rectangle {
+                    width: 28 * root.u;
+                    height: 2 * root.u;
+                    background: @linear-gradient(90deg, root.theme.accent 0%,
+                        root.theme.accent-label 100%);
+                }
+            }
+
+            Text {
+                text: root.hero.kicker.to-uppercase();
+                font-size: 18 * root.t;
+                font-weight: 600;
+                letter-spacing: self.font-size * 0.16;
+                color: root.theme.accent-label;
+                vertical-alignment: center;
+            }
+        }
+
+        // Its room ends 24 over the first neighbour on the left, whose foot the arc lifts 40.
+        HeroTitle {
+            theme: root.theme;
+            text: root.hero.title;
+            logo: root.hero.logo;
+            size: 80 * root.u;
+            room: root.height - root.theme.safe-lift - (Sizes.side-foot + Sizes.arc-lift(1)
+                + Sizes.side-height * root.scale * Sizes.arc-scale(1) + 24) * root.u
+                - parent.y - kicker.preferred-height - facts.preferred-height
+                - root.actions-height - 3 * parent.spacing;
+        }
+
+        facts := HorizontalLayout {
+            spacing: 9 * root.u;
+
+            VerticalLayout {
+                alignment: start;
+                padding-top: 4 * root.u;
+
+                Image {
+                    width: 22 * root.u;
+                    height: 22 * root.u;
+                    source: @image-url("clock.svg");
+                    colorize: root.theme.muted;
+                    accessible-role: none;
+                }
+            }
+
+            Text {
+                text: root.hero.facts;
+                font-size: 23 * root.t;
+                wrap: word-wrap;
+                color: root.theme.text-secondary;
+            }
+        }
+    }
+
+    // The focused game's name in a pill, 24 under the centre cover, at most 480 wide.
+    if root.hero.shown: Glass {
+        property <length> pad: 22 * root.u;
+
+        theme: root.theme;
+        kind: GlassKind.capsule;
+        x: (root.width - self.width) / 2;
+        y: root.centre-bottom + 24 * root.u;
+        width: min(480 * root.u, name.preferred-width + 2 * self.pad);
+        height: 56 * root.t;
+        border-radius: self.height / 2;
+
+        name := Text {
+            x: parent.pad;
+            width: parent.width - 2 * parent.pad;
+            text: root.hero.title;
+            font-size: 20 * root.t;
+            font-weight: 500;
+            overflow: elide;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            color: root.theme.text;
+            accessible-role: none;
+        }
+    }
+}

@@ -1,0 +1,14 @@
+id = "procession"
+name = "Prozession"
+badge = "PROC"
+version = "1.2.0"
+author = "Kidō"
+category = "layout"
+api = "3.0.0"
+
+[layout]
+actions = "none"
+tabs = "stores"
+frame = "switcher"
+art = "cover"
+scroll = "stage"

@@ -1,0 +1,14 @@
+id = "moonlight"
+name = "Mondlicht"
+badge = "MOON"
+version = "1.1.0"
+author = "Kidō"
+category = "layout"
+api = "3.0.0"
+
+[layout]
+actions = "above"
+tabs = "none"
+frame = "switcher"
+art = "cover"
+scroll = "stage"

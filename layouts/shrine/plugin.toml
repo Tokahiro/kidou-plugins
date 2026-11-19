@@ -1,0 +1,14 @@
+id = "shrine"
+name = "Schrein"
+badge = "SHRINE"
+version = "1.2.0"
+author = "Kidō"
+category = "layout"
+api = "3.0.0"
+
+[layout]
+actions = "above"
+tabs = "groups"
+frame = "rail"
+art = "cover"
+scroll = "row"

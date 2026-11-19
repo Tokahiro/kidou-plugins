@@ -1,0 +1,361 @@
+// Startseite Schrein as a layout plugin: the focused game's art fills the screen beside Home's
+// rail of pages at the left edge. Beside the rail the top tabs (Zuletzt gespielt, Favoriten,
+// Installiert, Neu) stand at the top, which LT and RT step; under them the kicker, the title, the
+// tagline, the facts and Home's capsules; and a row of covers runs along the bottom, on past the right edge.
+// The row scrolls once the focus passes its last whole cover.
+
+import {
+    LayoutCardSize, LayoutTile, LayoutHero, LayoutEmptyWords, LayoutTheme, LayoutZone,
+    LayoutPlace,
+} from "kidou-layout-3.slint";
+import {
+    EmptyCard, Facts, HeroTitle, Ring, RingStyle, RowCover,
+} from "kidou-layout-parts-3.slint";
+
+// The row's covers at the Kartengröße and the places of the words and the tabs, in canvas px.
+global Sizes {
+    // The covers' foot above the canvas's bottom: Home's hint band and the focus ring's reach.
+    out property <float> foot: 74 + 56;
+    out property <float> gap: 30;
+    // The tabs' top and height, the room either side of a tab's name, and the tab line under it.
+    out property <float> tabs-top: 40;
+    out property <float> tabs-height: 64;
+    out property <float> tab-side: 20;
+    out property <float> tab-line-width: 40;
+    out property <float> tab-line-height: 3;
+    // The words' top, under the tabs, and their widest.
+    out property <float> words-top: 196;
+    out property <float> words-width: 760;
+    // How much larger the focused tab is drawn.
+    out property <float> tab-grow: 1.03;
+
+    public pure function width(cards: LayoutCardSize) -> float {
+        return cards == LayoutCardSize.normal ? 188 : cards == LayoutCardSize.very-large ? 260 : 220;
+    }
+    public pure function height(cards: LayoutCardSize) -> float {
+        return cards == LayoutCardSize.normal ? 256 : cards == LayoutCardSize.very-large ? 354 : 300;
+    }
+    public pure function pitch(cards: LayoutCardSize) -> float {
+        return self.width(cards) + self.gap;
+    }
+}
+
+// A text tab: its name 24/500 in `muted`, the chosen one in `text` with the tab line under its
+// start. While the tabs hold the focus the chosen tab, which is the focused one, grows a little
+// and wears the soft focus ring. Half the gap between two tabs stands at each side, so their hit
+// areas meet, 76 high.
+component TextTab inherits Rectangle {
+    in property <LayoutTheme> theme;
+    in property <string> label;
+    in property <bool> chosen;
+    in property <bool> focused;
+
+    property <length> u: root.theme.unit;
+    property <length> side: Sizes.tab-side * root.u;
+
+    width: name.preferred-width + 2 * root.side;
+
+    Rectangle {
+        y: 6 * root.u;
+        height: parent.height - 12 * root.u;
+        transform-scale: root.chosen && root.focused && !root.theme.reduced-motion
+            ? Sizes.tab-grow : 1;
+
+        animate transform-scale {
+            duration: 130ms;
+            easing: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        Ring {
+            width: 100%;
+            height: 100%;
+            theme: root.theme;
+            style: RingStyle.soft;
+            shown: root.chosen && root.focused;
+            radius: self.height / 2;
+        }
+
+        name := Text {
+            x: root.side;
+            width: self.preferred-width;
+            text: root.label;
+            font-size: 24 * root.u * root.theme.text-scale;
+            font-weight: 500;
+            color: root.chosen ? root.theme.text : root.theme.muted;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+
+        if root.chosen: Rectangle {
+            x: root.side;
+            y: (parent.height + name.preferred-height) / 2;
+            width: Sizes.tab-line-width * root.u;
+            height: Sizes.tab-line-height * root.u;
+            background: root.theme.text;
+        }
+    }
+
+    @children
+}
+
+// A pill at an end of the tabs, LT or RT, which steps them: fainter and wider than a hint's pill,
+// 8 further from the tabs than they stand from each other.
+component Shoulder inherits Rectangle {
+    in property <LayoutTheme> theme;
+    in property <string> letters;
+    in property <bool> leading;
+
+    property <length> u: root.theme.unit;
+    out property <length> pill-x: pill.x;
+    out property <length> pill-width: pill.width;
+
+    width: pill.width + 8 * root.u;
+    height: 46 * root.u;
+
+    pill := Rectangle {
+        x: root.leading ? 0px : 8 * root.u;
+        y: (root.height - self.height) / 2;
+        width: row.preferred-width;
+        height: 34 * root.u;
+        border-radius: 10 * root.u;
+        background: root.theme.white-08;
+
+        row := HorizontalLayout {
+            padding-left: 8 * root.u;
+            padding-right: 8 * root.u;
+
+            Text {
+                text: root.letters;
+                font-size: 18 * root.u * root.theme.text-scale;
+                font-weight: 700;
+                color: root.theme.text;
+                vertical-alignment: center;
+                accessible-role: none;
+            }
+        }
+    }
+
+    @children
+}
+
+export component Layout {
+    in property <[LayoutTile]> tiles;
+    in property <int> focused;
+    in property <LayoutZone> zone;
+    in property <image> stage;
+    in property <LayoutHero> hero;
+    in property <bool> empty;
+    in property <LayoutEmptyWords> empty-words;
+    in property <[string]> tabs;
+    in property <int> tab;
+    in property <LayoutTheme> theme;
+    // Home's capsules, 14 under the facts.
+    out property <length> actions-x: root.theme.content-left;
+    out property <length> actions-y: words.y + words.height + 14 * root.u;
+    // The focused cover, at rest.
+    out property <LayoutPlace> focused-place: {
+        x: root.theme.content-left + (root.focused - root.scrolled) * root.pitch * root.u,
+        y: root.row-top,
+        width: Sizes.width(root.theme.cards) * root.u,
+        height: Sizes.height(root.theme.cards) * root.u,
+        radius: root.theme.radius-cover,
+    };
+    callback activated(int);
+    callback tab-tapped(int);
+
+    property <length> u: root.theme.unit;
+    // The height of Home's row of capsules.
+    property <length> actions-height: (8 + 72 * root.theme.text-scale) * root.u;
+    property <length> t: root.u * root.theme.text-scale;
+    property <bool> in-row: root.zone == LayoutZone.row;
+    property <float> pitch: Sizes.pitch(root.theme.cards);
+    property <length> row-top: root.height - root.theme.safe-lift
+        - (Sizes.foot + Sizes.height(root.theme.cards)) * root.u;
+    // The whole covers from the content's left to its right; the row scrolls once the focus
+    // passes the last of them.
+    property <int> shown: max(1, floor((root.width - root.theme.content-left
+        - root.theme.content-right + Sizes.gap * root.u) / root.u / root.pitch));
+    property <int> scrolled: max(0, root.focused - (root.shown - 1));
+
+    // Without a hero the art recedes under a veil.
+    if !root.hero.shown: Rectangle {
+        background: #00000085;
+    }
+
+    // Its place is the row's.
+    if root.empty: EmptyCard {
+        x: root.theme.content-left;
+        y: root.row-top;
+        theme: root.theme;
+        words: root.empty-words;
+        focused: root.in-row;
+
+        // Home scans for stores again.
+        TouchArea {
+            clicked => {
+                root.activated(0);
+            }
+        }
+    }
+
+    if !root.empty: Rectangle {
+        property <float> slid: root.scrolled;
+        property <float> scroll: root.theme.reduced-motion ? root.scrolled : self.slid;
+
+        animate slid {
+            duration: 300ms;
+            easing: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        x: -self.scroll * root.pitch * root.u;
+        y: root.row-top;
+        width: root.width;
+        height: Sizes.height(root.theme.cards) * root.u;
+
+        for tile[index] in root.tiles: RowCover {
+            x: root.theme.content-left + index * root.pitch * root.u;
+            width: Sizes.width(root.theme.cards) * root.u;
+            height: parent.height;
+            theme: root.theme;
+            tile: tile;
+            selected: index == root.focused;
+            focused: root.in-row && index == root.focused;
+
+            TouchArea {
+                clicked => {
+                    root.activated(index);
+                }
+            }
+        }
+    }
+
+    // The game's words under the tabs, Home's capsules after them.
+    words := VerticalLayout {
+        visible: root.hero.shown;
+        x: root.theme.content-left;
+        y: Sizes.words-top * root.u;
+        width: min(Sizes.words-width * root.u,
+            root.width - root.theme.content-left - root.theme.content-right);
+        height: self.preferred-height;
+        spacing: 14 * root.u;
+
+        kicker := HorizontalLayout {
+            spacing: 14 * root.u;
+            alignment: start;
+
+            VerticalLayout {
+                alignment: center;
+
+                Rectangle {
+                    width: 28 * root.u;
+                    height: 2 * root.u;
+                    background: @linear-gradient(90deg, root.theme.accent 0%,
+                        root.theme.accent-label 100%);
+                }
+            }
+
+            Text {
+                text: root.hero.kicker.to-uppercase();
+                font-size: 18 * root.t;
+                font-weight: 600;
+                letter-spacing: self.font-size * 0.16;
+                color: root.theme.accent-label;
+                vertical-alignment: center;
+            }
+        }
+
+        // Its room ends 24 over the row.
+        HeroTitle {
+            theme: root.theme;
+            text: root.hero.title;
+            logo: root.hero.logo;
+            room: root.row-top - 24 * root.u - parent.y - kicker.preferred-height
+                - facts.preferred-height - root.actions-height - 3 * parent.spacing;
+        }
+
+        // The tagline, where the game has one, in one line, over the facts.
+        facts := VerticalLayout {
+            spacing: parent.spacing;
+
+            if root.hero.tagline != "": Text {
+                text: root.hero.tagline;
+                font-size: 23 * root.t;
+                color: root.theme.text-secondary;
+                overflow: elide;
+            }
+
+            Facts {
+                theme: root.theme;
+                facts: root.hero.fact-list;
+            }
+        }
+    }
+
+    // The top tabs, between the pills of LT and RT while there is more than one tab to step; the
+    // pills step the tabs, going round.
+    if root.tabs.length > 0: HorizontalLayout {
+        x: root.theme.content-left;
+        y: Sizes.tabs-top * root.u;
+        width: self.preferred-width;
+        height: Sizes.tabs-height * root.u;
+        alignment: start;
+
+        if root.tabs.length > 1: VerticalLayout {
+            alignment: center;
+
+            Shoulder {
+                theme: root.theme;
+                letters: "LT";
+                leading: true;
+
+                // 64 square on the pill, as a finger needs.
+                TouchArea {
+                    x: parent.pill-x + (parent.pill-width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 64 * root.u;
+                    height: 64 * root.u;
+                    clicked => {
+                        root.tab-tapped(Math.mod(root.tab - 1 + root.tabs.length, root.tabs.length));
+                    }
+                }
+            }
+        }
+
+        for name[index] in root.tabs: TextTab {
+            theme: root.theme;
+            label: name;
+            chosen: index == root.tab;
+            focused: root.zone == LayoutZone.tabs;
+
+            TouchArea {
+                x: min(0px, (parent.width - 64 * root.u) / 2);
+                y: (parent.height - self.height) / 2;
+                width: max(parent.width, 64 * root.u);
+                height: 76 * root.u;
+                clicked => {
+                    root.tab-tapped(index);
+                }
+            }
+        }
+
+        if root.tabs.length > 1: VerticalLayout {
+            alignment: center;
+
+            Shoulder {
+                theme: root.theme;
+                letters: "RT";
+
+                // 64 square on the pill, as a finger needs.
+                TouchArea {
+                    x: parent.pill-x + (parent.pill-width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 64 * root.u;
+                    height: 64 * root.u;
+                    clicked => {
+                        root.tab-tapped(Math.mod(root.tab + 1, root.tabs.length));
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+id = "shadowplay"
+name = "Schattenspiel"
+badge = "SHADOW"
+version = "1.2.0"
+author = "Kidō"
+category = "layout"
+api = "3.0.0"
+
+[layout]
+actions = "above"
+tabs = "none"
+frame = "lanes"
+art = "cover"
+scroll = "row"

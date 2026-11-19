@@ -1,0 +1,435 @@
+// Startseite Prozession as a layout plugin: the focused game's 2:3 cover large on a lit floor at
+// the left, the games after it waiting small in a line on the same floor at the right, and the
+// kicker, the title and the facts above the line. The store tabs stand at the top, which LT and
+// RT step. The stage stays where it is and the games walk onto it from the line, so the focus
+// never travels across the screen. It has no actions of its own: A plays and X opens the game.
+
+import {
+    LayoutCardSize, LayoutEmptyWords, LayoutHero, LayoutPlace, LayoutTheme, LayoutTile, LayoutZone,
+} from "kidou-layout-3.slint";
+import {
+    Cover, CoverShadow, EmptyCard, Facts, HeroTitle, Ring, RingStyle,
+} from "kidou-layout-parts-3.slint";
+
+// The procession's places, in canvas px at a scale of 1: the stage cover 420 × 630 at the left
+// margin, its top 236 down; the line's covers 170 × 255, 20 apart, 96 right of the stage, every
+// foot on the stage's.
+global Sizes {
+    out property <float> width: 420;
+    out property <float> height: 630;
+    out property <float> next-width: 170;
+    out property <float> next-height: 255;
+    out property <float> gap: 20;
+    out property <float> top: 236;
+    out property <float> line-gap: 96;
+
+    // The Kartengröße's factor of the covers.
+    public pure function scale(cards: LayoutCardSize) -> float {
+        return cards == LayoutCardSize.normal ? 0.85 : cards == LayoutCardSize.very-large ? 1.1 : 1;
+    }
+
+    // The floor every foot stands on, from the canvas's top.
+    public pure function foot(scale: float) -> float {
+        return self.top + self.height * scale;
+    }
+
+    // The line's first place.
+    public pure function line-x(left: float, scale: float) -> float {
+        return left + self.width * scale + self.line-gap;
+    }
+
+    // Place `step`, 0 the stage and the line's from 1: its left edge, its width and its height.
+    public pure function place-x(step: int, left: float, scale: float) -> float {
+        return step == 0 ? left
+            : self.line-x(left, scale) + (step - 1) * (self.next-width + self.gap) * scale;
+    }
+    public pure function place-width(step: int, scale: float) -> float {
+        return (step == 0 ? self.width : self.next-width) * scale;
+    }
+    public pure function place-height(step: int, scale: float) -> float {
+        return (step == 0 ? self.height : self.next-height) * scale;
+    }
+
+    // The line's whole places on a canvas `canvas` px wide, every one inside the right margin.
+    public pure function shown(canvas: float, left: float, scale: float) -> int {
+        return max(1, floor((canvas - left - self.line-x(left, scale) + self.gap * scale)
+            / ((self.next-width + self.gap) * scale)));
+    }
+}
+
+// A cover of the procession at `offset` places from the stage, a fraction while the games walk:
+// on the stage at 0, in the line's place `offset` from 1, leaving to the left below 0. Focused, it
+// takes the cover ring.
+component ProcessionCover {
+    in property <LayoutTheme> theme;
+    in property <LayoutTile> tile;
+    in property <float> offset;
+    // The whole places of the line, past which a cover fades out.
+    in property <int> shown;
+    in property <bool> focused;
+    in property <bool> selected;
+    // The focused game's cover at the size of a stage cover.
+    in property <image> stage;
+
+    property <length> u: root.theme.unit;
+    property <float> scale: Sizes.scale(root.theme.cards);
+    property <float> margin: root.theme.canvas-margin / root.u;
+    property <int> step: max(0, floor(root.offset));
+    property <float> part: root.offset < 0 ? 0 : root.offset - root.step;
+    // Before the stage: the stage's place, one cover's width and a gap further left.
+    property <float> before: root.offset < 0 ? -root.offset : 0;
+    property <float> left: Sizes.place-x(root.step, root.margin, root.scale)
+        + (Sizes.place-x(root.step + 1, root.margin, root.scale)
+            - Sizes.place-x(root.step, root.margin, root.scale)) * root.part
+        - (Sizes.width + Sizes.gap) * root.scale * root.before;
+    property <float> wide: Sizes.place-width(root.step, root.scale)
+        + (Sizes.place-width(root.step + 1, root.scale) - Sizes.place-width(root.step, root.scale))
+            * root.part;
+    property <float> tall: Sizes.place-height(root.step, root.scale)
+        + (Sizes.place-height(root.step + 1, root.scale)
+            - Sizes.place-height(root.step, root.scale)) * root.part;
+    // It fades out leaving the stage to the left, and past the line's last whole place.
+    property <float> presence: min(clamp(1 - root.before, 0, 1),
+        clamp(root.shown + 1 - root.offset, 0, 1));
+    property <length> radius: root.theme.radius-cover;
+
+    visible: root.presence > 0;
+    opacity: root.presence;
+    x: root.left * root.u;
+    y: (Sizes.foot(root.scale) - root.tall) * root.u;
+    width: root.wide * root.u;
+    height: root.tall * root.u;
+
+    CoverShadow {
+        theme: root.theme;
+        radius: root.radius;
+        focused: root.focused;
+    }
+
+    Ring {
+        width: 100%;
+        height: 100%;
+        theme: root.theme;
+        style: RingStyle.cover;
+        shown: root.focused;
+        radius: root.radius;
+    }
+
+    Cover {
+        theme: root.theme;
+        art: root.selected && root.stage.width > 1 ? root.stage : root.tile.art;
+        missing: root.tile.missing;
+        shows-title: root.tile.shows-title;
+        title-length: root.tile.title-length;
+        icon: root.tile.icon;
+        tint: root.tile.tint;
+        title: root.tile.title;
+        // As the Library's cover 261 wide sets them, grown with the cover.
+        title-size: 26 * root.u * root.wide / 261;
+        fallback-size: max(16, 23 * root.wide / 261) * root.u * root.theme.text-scale;
+        badge: root.tile.badge;
+        running: root.tile.running;
+        gloss: !root.focused;
+        radius: root.radius;
+    }
+
+    @children
+}
+
+// A pill at an end of the tabs, LT or RT, which steps the tabs: fainter and wider than a hint's
+// pill, 8 further from the tabs than they stand from each other.
+component Shoulder inherits Rectangle {
+    in property <LayoutTheme> theme;
+    in property <string> letters;
+    in property <bool> leading;
+
+    property <length> u: root.theme.unit;
+    out property <length> pill-x: pill.x;
+    out property <length> pill-width: pill.width;
+
+    width: pill.width + 8 * root.u;
+    height: 46 * root.u;
+
+    pill := Rectangle {
+        x: root.leading ? 0px : 8 * root.u;
+        width: row.preferred-width;
+        height: 34 * root.u;
+        border-radius: 10 * root.u;
+        background: root.theme.white-08;
+
+        row := HorizontalLayout {
+            padding-left: 8 * root.u;
+            padding-right: 8 * root.u;
+
+            Text {
+                text: root.letters;
+                font-size: 18 * root.u * root.theme.text-scale;
+                font-weight: 700;
+                color: root.theme.text;
+                vertical-alignment: center;
+                accessible-role: none;
+            }
+        }
+    }
+
+    @children
+}
+
+// One tab: the current one on the tint of a current item, in its rim.
+component Tab inherits Rectangle {
+    in property <LayoutTheme> theme;
+    in property <string> label;
+    in property <bool> current;
+
+    property <length> u: root.theme.unit;
+
+    width: text.preferred-width + 40 * root.u;
+    height: 46 * root.u;
+    border-radius: root.height / 2;
+    background: root.current ? root.theme.segment-tint : transparent;
+    border-width: root.current ? 1px : 0px;
+    border-color: root.theme.segment-border;
+
+    text := Text {
+        x: (root.width - self.width) / 2;
+        width: self.preferred-width;
+        text: root.label;
+        font-size: 21 * root.u * root.theme.text-scale;
+        font-weight: 500;
+        color: root.current ? root.theme.text : root.theme.muted;
+        vertical-alignment: center;
+        accessible-role: none;
+    }
+
+    @children
+}
+
+// A kicker's or a label's line: the accent's short dash before words in its small caps.
+component Label inherits HorizontalLayout {
+    in property <LayoutTheme> theme;
+    in property <string> text;
+    in property <length> size;
+
+    spacing: 14 * root.theme.unit;
+    alignment: start;
+
+    VerticalLayout {
+        alignment: center;
+
+        Rectangle {
+            width: 28 * root.theme.unit;
+            height: 2 * root.theme.unit;
+            background: @linear-gradient(90deg, root.theme.accent 0%, root.theme.accent-label 100%);
+        }
+    }
+
+    Text {
+        text: root.text.to-uppercase();
+        font-size: root.size;
+        font-weight: 600;
+        letter-spacing: self.font-size * 0.16;
+        color: root.theme.accent-label;
+        vertical-alignment: center;
+    }
+}
+
+export component Layout {
+    in property <[LayoutTile]> tiles;
+    in property <int> focused;
+    in property <LayoutZone> zone;
+    in property <image> stage;
+    in property <LayoutHero> hero;
+    in property <bool> empty;
+    in property <LayoutEmptyWords> empty-words;
+    in property <[string]> tabs;
+    in property <int> tab;
+    in property <LayoutTheme> theme;
+    // No actions: Home draws no capsules.
+    out property <length> actions-x;
+    out property <length> actions-y;
+    // The stage.
+    out property <LayoutPlace> focused-place: {
+        x: root.margin,
+        y: root.top,
+        width: Sizes.width * root.scale * root.u,
+        height: Sizes.height * root.scale * root.u,
+        radius: root.theme.radius-cover,
+    };
+    callback activated(int);
+    callback tab-tapped(int);
+
+    property <length> u: root.theme.unit;
+    property <length> t: root.u * root.theme.text-scale;
+    property <bool> in-row: root.zone == LayoutZone.row;
+    property <length> margin: root.theme.canvas-margin;
+    property <float> scale: Sizes.scale(root.theme.cards);
+    property <length> top: Sizes.top * root.u;
+    property <int> shown: Sizes.shown(root.width / root.u, root.margin / root.u, root.scale);
+    property <length> floor: Sizes.foot(root.scale) * root.u;
+    property <length> line-x: Sizes.line-x(root.margin / root.u, root.scale) * root.u;
+    property <length> line-top: root.floor - Sizes.next-height * root.scale * root.u;
+
+    // The lit floor the covers stand on: a band of the accent's light along their feet, as
+    // strong as Leuchten says, over a calm hairline that stays when Leuchten is off.
+    if !root.empty: Rectangle {
+        y: root.floor - 64 * root.u;
+        width: 100%;
+        height: 224 * root.u;
+        background: @linear-gradient(180deg, transparent 0%,
+            root.theme.accent-mid.with-alpha(root.theme.glow-alpha-soft) 29%,
+            root.theme.accent-mid.with-alpha(root.theme.glow-alpha-soft * 0.35) 55%,
+            transparent 100%);
+    }
+    if !root.empty: Rectangle {
+        y: root.floor;
+        width: 100%;
+        height: 1px;
+        background: @linear-gradient(90deg, root.theme.white-20 0%, root.theme.white-08 60%,
+            transparent 100%);
+    }
+
+    // The store tabs at the top, between the pills of LT and RT.
+    if root.tabs.length > 0: HorizontalLayout {
+        x: root.margin;
+        y: root.top - 96 * root.u;
+        width: root.width - 2 * root.margin;
+        height: 46 * root.u;
+        spacing: 10 * root.u;
+        alignment: start;
+
+        // LT and RT step the tabs, going round.
+        Shoulder {
+            theme: root.theme;
+            letters: "LT";
+            leading: true;
+
+            // 64 square on the pill, as a finger needs.
+            TouchArea {
+                x: parent.pill-x + (parent.pill-width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                width: 64 * root.u;
+                height: 64 * root.u;
+                clicked => {
+                    root.tab-tapped(Math.mod(root.tab - 1 + root.tabs.length, root.tabs.length));
+                }
+            }
+        }
+
+        for name[index] in root.tabs: Tab {
+            theme: root.theme;
+            label: name;
+            current: index == root.tab;
+
+            // At least 64 square, as a finger needs.
+            TouchArea {
+                x: min(0px, (parent.width - 64 * root.u) / 2);
+                y: (parent.height - 64 * root.u) / 2;
+                width: max(parent.width, 64 * root.u);
+                height: 64 * root.u;
+                clicked => {
+                    root.tab-tapped(index);
+                }
+            }
+        }
+
+        Shoulder {
+            theme: root.theme;
+            letters: "RT";
+
+            // 64 square on the pill, as a finger needs.
+            TouchArea {
+                x: parent.pill-x + (parent.pill-width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                width: 64 * root.u;
+                height: 64 * root.u;
+                clicked => {
+                    root.tab-tapped(Math.mod(root.tab + 1, root.tabs.length));
+                }
+            }
+        }
+    }
+
+    // No games: a card stands on the stage and scans for stores again.
+    if root.empty: EmptyCard {
+        x: root.margin;
+        y: root.top;
+        theme: root.theme;
+        words: root.empty-words;
+        focused: root.in-row;
+
+        TouchArea {
+            clicked => {
+                root.activated(0);
+            }
+        }
+    }
+
+    if !root.empty: Rectangle {
+        // The game on the stage, which walks on input.
+        property <float> walked: root.focused;
+        property <float> scroll: root.theme.reduced-motion ? root.focused : self.walked;
+
+        animate walked {
+            duration: 300ms;
+            easing: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        for tile[index] in root.tiles: ProcessionCover {
+            theme: root.theme;
+            tile: tile;
+            offset: index - parent.scroll;
+            shown: root.shown;
+            focused: root.in-row && index == root.focused;
+            selected: index == root.focused;
+            stage: root.stage;
+
+            TouchArea {
+                clicked => {
+                    root.activated(index);
+                }
+            }
+        }
+    }
+
+    // The game's words above the line, 64 under the stage's top and 24 clear of the line's
+    // label: the title takes the room between.
+    if root.hero.shown: VerticalLayout {
+        x: root.line-x;
+        y: root.top + 64 * root.u;
+        width: root.width - root.margin - self.x;
+        height: self.preferred-height;
+        spacing: 14 * root.u;
+
+        kicker := Label {
+            theme: root.theme;
+            text: root.hero.kicker;
+            size: 18 * root.t;
+        }
+
+        HeroTitle {
+            theme: root.theme;
+            text: root.hero.title;
+            logo: root.hero.logo;
+            room: up-next.y - 24 * root.u - parent.y - kicker.preferred-height
+                - facts.preferred-height - 2 * parent.spacing;
+        }
+
+        facts := Facts {
+            theme: root.theme;
+            facts: root.hero.fact-list;
+        }
+    }
+
+    // The line's label, 24 above its covers, while a game waits in it. Its place holds without
+    // it, so that the words above keep the same room.
+    up-next := Label {
+        visible: root.tiles.length > root.focused + 1;
+        x: root.line-x;
+        y: root.line-top - 24 * root.u - self.height;
+        width: self.preferred-width;
+        height: self.preferred-height;
+        theme: root.theme;
+        text: root.hero.up-next;
+        size: 16 * root.t;
+    }
+}

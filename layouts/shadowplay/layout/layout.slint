@@ -1,0 +1,212 @@
+// Startseite Schattenspiel as a layout plugin: the focused game's art fills the screen, framed by
+// Home's page lanes at both edges. Between them the kicker, the title and the facts stand at the
+// top left, Home's capsules under them; a row of covers runs along the bottom under „Zuletzt
+// gespielt“, its ends under the lanes' glass. The row scrolls once the focus passes its last
+// whole cover. The resting covers carry the still gloss; the focused one lifts, grows and takes
+// the cover ring.
+
+import {
+    LayoutCardSize, LayoutTile, LayoutHero, LayoutEmptyWords, LayoutTheme, LayoutZone,
+    LayoutPlace,
+} from "kidou-layout-3.slint";
+import {
+    EmptyCard, Facts, HeroTitle, RowCover,
+} from "kidou-layout-parts-3.slint";
+
+// The row's covers at the Kartengröße, the words' place and the lanes' arc, in canvas px.
+global Sizes {
+    // The row runs this far in from each edge: its first cover clear of the innermost lanes'
+    // glass but for its top corner, a further one past its last under the lanes at the right.
+    out property <float> inset: 165;
+    // The cover's foot above the canvas's bottom, without the television's lift: Home's hint
+    // band and the cover ring's reach.
+    out property <float> foot: 130;
+    // The words' top, and the gap under the row's label over the covers: past a focused cover's
+    // lift, growth and ring.
+    out property <float> words-top: 112;
+    out property <float> label-gap: 34;
+    // The gap from the lanes' arc to the row's label.
+    out property <float> label-clear: 24;
+
+    public pure function width(cards: LayoutCardSize) -> float {
+        return cards == LayoutCardSize.normal ? 188 : cards == LayoutCardSize.very-large ? 260 : 220;
+    }
+    public pure function height(cards: LayoutCardSize) -> float {
+        return cards == LayoutCardSize.normal ? 256 : cards == LayoutCardSize.very-large ? 354 : 300;
+    }
+    public pure function pitch(cards: LayoutCardSize) -> float {
+        return self.width(cards)
+            + (cards == LayoutCardSize.normal ? 40 : cards == LayoutCardSize.very-large ? 52 : 48);
+    }
+
+    // How far the lanes' arcs of `theme` lie short of their widest at `y` on a canvas `h` high:
+    // r - √(r² - d²) of their circle there, taken as d² / (r + √(r² - d²)).
+    public pure function lean(theme: LayoutTheme, h: float, y: float) -> float {
+        let crest = theme.lane-crest * h;
+        let r = (y < crest ? theme.lane-bend-top : theme.lane-bend) * h;
+        let d = y - crest;
+        return d * d / (r + sqrt(max(0, r * r - d * d)));
+    }
+}
+
+export component Layout {
+    in property <[LayoutTile]> tiles;
+    in property <int> focused;
+    in property <LayoutZone> zone;
+    in property <image> stage;
+    in property <LayoutHero> hero;
+    in property <bool> empty;
+    in property <LayoutEmptyWords> empty-words;
+    in property <[string]> tabs;
+    in property <int> tab;
+    in property <LayoutTheme> theme;
+    // Home's capsules, last of the words.
+    out property <length> actions-x: root.theme.content-left;
+    out property <length> actions-y: words.y + words.height - root.actions-height;
+    // The focused cover, at rest.
+    out property <LayoutPlace> focused-place: {
+        x: (Sizes.inset + (root.focused - root.scrolled) * root.pitch) * root.u,
+        y: root.row-top,
+        width: Sizes.width(root.theme.cards) * root.u,
+        height: Sizes.height(root.theme.cards) * root.u,
+        radius: root.theme.radius-cover,
+    };
+    callback activated(int);
+    callback tab-tapped(int);
+
+    property <length> u: root.theme.unit;
+    // The height of Home's row of capsules.
+    property <length> actions-height: (8 + 72 * root.theme.text-scale) * root.u;
+    property <length> t: root.u * root.theme.text-scale;
+    property <bool> in-row: root.zone == LayoutZone.row;
+    property <float> pitch: Sizes.pitch(root.theme.cards);
+    property <float> gap: root.pitch - Sizes.width(root.theme.cards);
+    property <length> row-top: root.height - root.theme.safe-lift
+        - (Sizes.foot + Sizes.height(root.theme.cards)) * root.u;
+    // The whole covers between the row's insets; the row scrolls once the focus passes the last
+    // of them, and draws a further one cut under the lanes at the right.
+    property <int> shown: max(1, floor((root.width / root.u - 2 * Sizes.inset + root.gap)
+        / root.pitch));
+    property <int> scrolled: max(0, root.focused - (root.shown - 1));
+
+    // Without a hero the art recedes under a veil.
+    if !root.hero.shown: Rectangle {
+        background: #00000085;
+    }
+
+    // Its place is the row's.
+    if root.empty: EmptyCard {
+        x: Sizes.inset * root.u;
+        y: root.row-top;
+        theme: root.theme;
+        words: root.empty-words;
+        focused: root.in-row;
+
+        // Home scans for stores again.
+        TouchArea {
+            clicked => {
+                root.activated(0);
+            }
+        }
+    }
+
+    // „Zuletzt gespielt“ over the covers, its foot clear of a focused cover's lift and ring, and
+    // its start clear of the lanes' arc at the left, which leans in at its height.
+    if !root.empty: Text {
+        x: max(Sizes.inset * root.u, root.theme.content-left - root.theme.canvas-margin
+            - (Sizes.lean(root.theme, root.height / root.u, self.y / root.u) - Sizes.label-clear) * root.u);
+        y: root.row-top - Sizes.label-gap * root.u - self.height;
+        text: root.hero.recently-played.to-uppercase();
+        font-size: 18 * root.t;
+        font-weight: 600;
+        letter-spacing: self.font-size * 0.16;
+        color: root.theme.accent-label;
+    }
+
+    if !root.empty: Rectangle {
+        property <float> slid: root.scrolled;
+        property <float> scroll: root.theme.reduced-motion ? root.scrolled : self.slid;
+
+        animate slid {
+            duration: 300ms;
+            easing: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        x: -self.scroll * root.pitch * root.u;
+        y: root.row-top;
+        width: root.width;
+        height: Sizes.height(root.theme.cards) * root.u;
+
+        for tile[index] in root.tiles: Rectangle {
+            if index >= root.scrolled && index <= root.scrolled + root.shown: RowCover {
+                x: (Sizes.inset + index * root.pitch) * root.u;
+                width: Sizes.width(root.theme.cards) * root.u;
+                height: Sizes.height(root.theme.cards) * root.u;
+                theme: root.theme;
+                tile: tile;
+                selected: index == root.focused;
+                focused: root.in-row && index == root.focused;
+
+                TouchArea {
+                    clicked => {
+                        root.activated(index);
+                    }
+                }
+            }
+        }
+    }
+
+    // The game's words at the top left between the lanes, Home's capsules last.
+    words := VerticalLayout {
+        visible: root.hero.shown;
+        x: root.theme.content-left;
+        y: Sizes.words-top * root.u;
+        width: root.width - root.theme.content-left - root.theme.content-right;
+        height: self.preferred-height;
+        spacing: 14 * root.u;
+
+        kicker := HorizontalLayout {
+            spacing: 14 * root.u;
+            alignment: start;
+
+            VerticalLayout {
+                alignment: center;
+
+                Rectangle {
+                    width: 28 * root.u;
+                    height: 2 * root.u;
+                    background: @linear-gradient(90deg, root.theme.accent 0%,
+                        root.theme.accent-label 100%);
+                }
+            }
+
+            Text {
+                text: root.hero.kicker.to-uppercase();
+                font-size: 18 * root.t;
+                font-weight: 600;
+                letter-spacing: self.font-size * 0.16;
+                color: root.theme.accent-label;
+                vertical-alignment: center;
+            }
+        }
+
+        HeroTitle {
+            theme: root.theme;
+            text: root.hero.title;
+            logo: root.hero.logo;
+            room: root.row-top - (Sizes.label-gap + 24) * root.u - 18 * root.t
+                - Sizes.words-top * root.u - kicker.preferred-height - facts.preferred-height
+                - root.actions-height - 3 * parent.spacing;
+        }
+
+        facts := Facts {
+            theme: root.theme;
+            facts: root.hero.fact-list;
+        }
+
+        // Home draws its capsules here.
+        Rectangle {
+            height: root.actions-height;
+        }
+    }
+}
