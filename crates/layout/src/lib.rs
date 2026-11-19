@@ -44,6 +44,10 @@ pub const CONTRACT: (&str, &str) = (
     include_str!("../contract/kidou-layout-3.slint"),
 );
 
+/// The version of the contract [`CONTRACT`] and [`PARTS`] hold: the latest a layout's `api` may
+/// name. A name they export more is a new minor version.
+pub const VERSION: &str = "3.1.0";
+
 /// Kidō's parts a layout may import beside [`CONTRACT`], by their name, as (name, text): Home
 /// serves them from memory too.
 pub const PARTS: (&str, &str) = (
