@@ -75,6 +75,9 @@ fn a_package_holds_the_manifest_and_then_the_layout_each_folder_before_its_files
     let root = repository("order");
     fs::write(root.join("layouts/lamp/layout/art.svg"), "<svg/>").expect("a second file");
     fs::write(root.join("layouts/lamp/preview.png"), "a picture").expect("a file beside");
+    fs::create_dir_all(root.join("layouts/lamp/layout/bare/inner")).expect("folders of no file");
+    fs::create_dir_all(root.join("layouts/lamp/layout/icons/bare")).expect("a folder of a file");
+    fs::write(root.join("layouts/lamp/layout/icons/moon.svg"), "<svg/>").expect("a file below");
     let source = sources(&root).expect("the sources").remove(0);
     let package = source.pack().expect("a pack");
     let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(&package[..]));
@@ -91,6 +94,8 @@ fn a_package_holds_the_manifest_and_then_the_layout_each_folder_before_its_files
             "plugin.toml",
             "layout",
             "layout/art.svg",
+            "layout/icons",
+            "layout/icons/moon.svg",
             "layout/layout.slint"
         ]
     );
