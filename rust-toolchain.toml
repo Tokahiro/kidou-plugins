@@ -1,0 +1,6 @@
+[toolchain]
+# The compiler Kidō builds with, so that a new stable release and its lints never turn CI red on
+# their own.
+channel = "1.100.0"
+profile = "minimal"
+components = ["clippy", "rustfmt"]

@@ -290,7 +290,6 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                 version.unwrap_or("no version"),
                 source.version
             )),
-            Ok(_) => {}
             Err(_) if version.and_then(numbers) >= numbers(&source.version) => {
                 wrong.push(format!(
                     "{id}: the new version {} is not later than the listed {}",
@@ -298,7 +297,7 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                     version.unwrap_or_default()
                 ));
             }
-            Err(_) => {}
+            Ok(_) | Err(_) => {}
         }
     }
     for pack in tables(&list, "pack") {

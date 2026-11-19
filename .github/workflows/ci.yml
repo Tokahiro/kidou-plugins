@@ -38,6 +38,7 @@ jobs:
         with:
           shared-key: slint
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
       - run: cargo xtask check
 
