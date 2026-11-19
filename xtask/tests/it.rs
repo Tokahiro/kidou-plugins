@@ -249,7 +249,7 @@ fn code_repository(name: &str) -> PathBuf {
         (
             "devices/lantern/Cargo.toml",
             "[package]\nname = \"plugin-lantern\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
-             [lib]\ncrate-type = [\"cdylib\"]\n",
+             [lib]\nname = \"wick\"\ncrate-type = [\"cdylib\"]\n",
         ),
         (
             "devices/lantern/src/lib.rs",
@@ -302,9 +302,27 @@ fn a_plugin_with_code_is_built_and_packed_to_the_same_bytes_in_any_folder() {
 fn a_plugin_whose_code_does_not_build_does_not_pack() {
     let root = code_repository("code-broken");
     fs::write(root.join("devices/lantern/src/lib.rs"), "fn lit(").expect("broken code");
+    let list = fs::read_to_string(root.join("index.toml")).expect("the list");
+    fs::write(root.join("index.toml"), list.replace("device", "events")).expect("the list");
     let wrong = check(&root).expect("a check");
-    assert_eq!(wrong, ["lantern: cargo could not build `plugin-lantern`"]);
+    assert_eq!(
+        wrong,
+        [
+            "lantern: the list names another category",
+            "lantern: cargo could not build `plugin-lantern`"
+        ]
+    );
     pack_new(&root).expect_err("a refusal");
+}
+
+#[test]
+fn an_id_of_two_categories_is_refused() {
+    let root = code_repository("id-twice");
+    fs::create_dir_all(root.join("layouts/lantern")).expect("the second source's folder");
+    let manifest = manifest("1.0.0").replace("lamp", "lantern");
+    fs::write(root.join("layouts/lantern/plugin.toml"), manifest).expect("the manifest");
+    let refused = check(&root).expect_err("a refusal");
+    assert!(refused.ends_with("a second plugin `lantern`"), "{refused}");
 }
 
 #[test]

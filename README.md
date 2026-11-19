@@ -240,6 +240,7 @@ CI checks that the list, the packages and the sources fit each other, and that t
 For a plugin with code it first builds the component, `plugin.wasm`, for `wasm32-wasip2`.
 The compiler, the dependencies and the release profile are fixed here, so the same source gives the same package.
 A new compiler or dependency can change the component, and CI then asks for a new version of the plugin.
+A component holds the paths of its source files as the build's system writes them, so compare a listed plugin with code on Linux, as CI does.
 It also runs the check Kidō runs on a Home layout at the install, from [`crates/layout/`](crates/layout), which is the code Kidō itself builds.
 Kidō's check of the manifest isn't part of it, nor the time and memory limits Kidō sets for drawing an SVG, so install a new plugin with `kidouplug` once before you open the pull request.
 After the merge it packs the new version, adds the file to `packages/` and updates the plugin's entry in `index.toml`.

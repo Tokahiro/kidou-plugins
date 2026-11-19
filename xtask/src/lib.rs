@@ -129,15 +129,16 @@ impl Source {
     /// the locked dependencies of the workspace, in a target folder of its own.
     fn component(&self) -> Result<Vec<u8>, String> {
         let at = self.folder.join("Cargo.toml");
-        let name = (read(&at)?.get("package"))
-            .and_then(|package| package.get("name")?.as_str().map(str::to_owned))
-            .ok_or_else(|| format!("{}: no `package.name`", at.display()))?;
+        let manifest = read(&at)?;
+        let word = |table: &str| manifest.get(table)?.get("name")?.as_str();
+        let name = word("package").ok_or_else(|| format!("{}: no `package.name`", at.display()))?;
+        let library = word("lib").unwrap_or(name).replace('-', "_");
         let target = self.root.join("target").join("code");
         let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
         let built = Command::new(cargo)
             .current_dir(&self.root)
             .args(["build", "--locked", "--quiet", "--release"])
-            .args(["--target", TARGET, "-p", &name, "--target-dir"])
+            .args(["--target", TARGET, "-p", name, "--target-dir"])
             .arg(&target)
             .stdout(Stdio::null())
             .status()
@@ -145,8 +146,7 @@ impl Source {
         if !built.success() {
             return Err(format!("{}: cargo could not build `{name}`", self.id));
         }
-        let file =
-            (target.join(TARGET).join("release")).join(format!("{}.wasm", name.replace('-', "_")));
+        let file = (target.join(TARGET).join("release")).join(format!("{library}.wasm"));
         let bytes = fs::read(&file).map_err(|why| format!("{}: {why}", file.display()))?;
         if bytes.len() > MAX_COMPONENT {
             return Err(format!(
@@ -159,8 +159,8 @@ impl Source {
 }
 
 /// Each plugin with its source under `root`, by category and id; refuses a manifest whose id is
-/// not its folder's name or none Kidō's list takes, whose category is not its folder's, or
-/// whose version is not three numbers.
+/// not its folder's name, none Kidō's list takes or that of a plugin of another category, whose
+/// category is not its folder's, or whose version is not three numbers.
 pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
     let mut found = Vec::new();
     for (category, folder, brings) in SOURCES {
@@ -201,6 +201,9 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
             }
             if word("category")? != category {
                 return Err(format!("{}: no `{category}` plugin", at.display()));
+            }
+            if found.iter().any(|other: &Source| other.id == id) {
+                return Err(format!("{}: a second plugin `{id}`", at.display()));
             }
             if numbers(&version).is_none() {
                 return Err(format!(
@@ -306,11 +309,9 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
     let list = read(&root.join(LIST))?;
     let sources = sources(root)?;
     let mut wrong = Vec::new();
-    let mut listed = Vec::new();
     for plugin in tables(&list, "plugin") {
         let word = |key: &str| plugin.get(key).and_then(|item| item.as_str());
         let id = word("id").unwrap_or("");
-        listed.push((id, word("version"), word("category").unwrap_or("")));
         let Some(version) = word("version") else {
             if !sources.iter().any(|source| source.id == id) {
                 wrong.push(format!("{id}: no `version`, and no source to pack"));
@@ -329,6 +330,11 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
     }
     for source in &sources {
         let id = &source.id;
+        let listed = entry(&list, id);
+        let word = |key: &str| listed?.get(key)?.as_str();
+        if listed.is_some() && word("category") != Some(source.category) {
+            wrong.push(format!("{id}: the list names another category"));
+        }
         let packed = match source.pack() {
             Ok(packed) => packed,
             Err(why) => {
@@ -336,19 +342,17 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
                 continue;
             }
         };
-        let Some((_, version, category)) = listed.iter().find(|(listed, ..)| listed == id) else {
+        if listed.is_none() {
             continue;
-        };
-        if *category != source.category {
-            wrong.push(format!("{id}: the list names another category"));
         }
+        let version = word("version");
         match fs::read(root.join("packages").join(source.package())) {
             Ok(listed) if listed != packed => wrong.push(format!(
                 "{id}: the source differs from packages/{}: a package never changes, so give \
                  the plugin a new version",
                 source.package()
             )),
-            Ok(_) if *version != Some(&source.version) => wrong.push(format!(
+            Ok(_) if version != Some(&source.version) => wrong.push(format!(
                 "{id}: the list names {}, the source {}",
                 version.unwrap_or("no version"),
                 source.version
@@ -367,10 +371,8 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
         let name = pack.get("id").and_then(|item| item.as_str()).unwrap_or("");
         let ids = pack.get("plugins").and_then(|item| item.as_array());
         for id in ids.into_iter().flatten().filter_map(|id| id.as_str()) {
-            let offered = |(listed, version, _): &(&str, Option<&str>, &str)| {
-                *listed == id && version.is_some()
-            };
-            if !listed.iter().any(offered) {
+            let version = entry(&list, id).and_then(|plugin| plugin.get("version")?.as_str());
+            if version.is_none() {
                 wrong.push(format!("pack {name}: the list offers no plugin `{id}`"));
             }
         }
@@ -410,12 +412,8 @@ pub fn layouts(root: &Path) -> Result<Vec<String>, String> {
 /// `pack` writes no package of it.
 pub fn unlisted(root: &Path) -> Result<Vec<String>, String> {
     let list = read(&root.join(LIST))?;
-    let listed = |id: &str| {
-        tables(&list, "plugin")
-            .any(|plugin| plugin.get("id").and_then(|id| id.as_str()) == Some(id))
-    };
     let sources = sources(root)?.into_iter().map(|source| source.id);
-    Ok(sources.filter(|id| !listed(id)).collect())
+    Ok(sources.filter(|id| entry(&list, id).is_none()).collect())
 }
 
 /// Writes the package of each listed source under `root` whose version has none, and gives the
@@ -461,6 +459,11 @@ fn read(file: &Path) -> Result<DocumentMut, String> {
     let text = fs::read_to_string(file).map_err(|why| at(why.to_string()))?;
     text.parse()
         .map_err(|why: toml_edit::TomlError| at(why.to_string()))
+}
+
+/// The list's entry of the plugin `id`.
+fn entry<'a>(list: &'a DocumentMut, id: &str) -> Option<&'a Table> {
+    tables(list, "plugin").find(|plugin| plugin.get("id").and_then(|id| id.as_str()) == Some(id))
 }
 
 fn tables<'a>(list: &'a DocumentMut, key: &str) -> impl Iterator<Item = &'a Table> {
