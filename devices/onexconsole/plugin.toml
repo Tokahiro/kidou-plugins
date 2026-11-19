@@ -1,0 +1,27 @@
+id = "onexconsole"
+name = "OneXConsole"
+badge = "OXC"
+version = "1.0.0"
+author = "Kidō"
+category = "device"
+api = "1.0.0"
+
+[device]
+makers = ["ONE-NETBOOK*"]
+watch = ['{AppData}\gamerzone\db']
+
+[[tiles]]
+key = "presets"
+label = { en = "Presets", de = "Vorgaben" }
+symbol = "sliders"
+
+[[tiles]]
+key = "open"
+label = { en = "OneXConsole", de = "OneXConsole" }
+symbol = "gear"
+
+[grants]
+folders = [
+    { path = '{AppData}\gamerzone\db', why = { de = "Liest deine Vorgaben aus OneXConsole", en = "Reads your presets from OneXConsole" } },
+    { path = '{ProgramFiles}\OneXConsole', why = { de = "Findet OneXConsole, um es zu öffnen", en = "Finds OneXConsole to open it" } },
+]

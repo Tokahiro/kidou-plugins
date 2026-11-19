@@ -1,0 +1,47 @@
+// An events plugin, on the host's imports of `kidou:host` (../deps/host). Kidō calls it only at the events its
+// manifest names, and on a press of one of its quick-menu tiles; its settings rows and tiles are
+// data in its manifest, which Kidō draws.
+package kidou:events@1.0.0;
+
+interface types {
+    enum language { english, german }
+
+    /// A setting's value as the player set it, or its default: by the setting's key in the
+    /// manifest.
+    variant value { switch(bool), choice(string) }
+    record setting { key: string, value: value }
+
+    /// The game an event is about: its store's id, its key in that store, and its title.
+    record game { store: string, key: string, title: string }
+    enum game-event { started, ended }
+
+    record program { program: string, arguments: string, directory: string, within: string }
+    /// What Kidō opens: held to the plugin's grants, as a store plugin's launch.
+    variant launch { uri(string), program(program) }
+
+    /// A sheet of rows, each a label and its value, which Kidō draws over the quick menu.
+    record sheet { title: string, rows: list<tuple<string, string>> }
+
+    /// An action from Kidō's fixed list.
+    variant action { open(launch), sheet(sheet) }
+
+    /// What a press gives: the action to run, and the tile's state line from now on, if it
+    /// changes.
+    record pressed { action: option<action>, state: option<string> }
+}
+
+interface handler {
+    use types.{language, setting, game, game-event, action, pressed};
+
+    /// A game started or ended. A sheet it gives is not shown: only an `open` runs.
+    on-game: func(event: game-event, game: game, settings: list<setting>) -> option<action>;
+
+    /// The player pressed the tile `tile` of the quick menu.
+    press: func(tile: string, language: language, settings: list<setting>) -> pressed;
+}
+
+world events {
+    import kidou:host/host@1.0.0;
+    import kidou:host/sqlite@1.0.0;
+    export handler;
+}

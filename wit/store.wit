@@ -1,0 +1,130 @@
+// A store as a WebAssembly plugin, on the host's imports of `kidou:host` (deps/host). Paths are
+// strings (a drive path as deps/host says), a `last` or `written` is a time as deps/host says.
+package kidou:store@2.0.0;
+
+interface types {
+    use kidou:host/host@1.0.0.{hive};
+
+    enum note-level { info, warning }
+    record note { level: note-level, text: string }
+
+    record detection { found: bool, root: option<string>, notes: list<note> }
+
+    enum store-signal { library-changed, game-activity }
+    enum arm { always, while-launching }
+    record registry-watch { hive: hive, key: string, signal: store-signal, arm: arm }
+    record folder-watch { path: string, names: list<string>, signal: store-signal, arm: arm }
+    variant watch-spec {
+        registry-values(registry-watch),
+        registry-tree(registry-watch),
+        folder(folder-watch),
+        folder-tree(folder-watch),
+    }
+
+    variant scan-depth { names(list<string>), quick, full }
+
+    variant download { running, held, listed, progress(u8) }
+    record installed { bytes: u64, updating: bool }
+    record installing { bytes: u64, download: download }
+    variant install { installed(installed), installing(installing), not-installed(u64) }
+
+    record store-play { minutes: u32, last: option<s64> }
+    record game-place {
+        folders: list<string>,
+        package-family: option<string>,
+        programs: list<string>,
+        launchers: list<string>,
+    }
+
+    enum art-slot { capsule, square, hero, header, logo, backdrop, icon, capture }
+    enum art-origin { user, store-local, store-online, steam-grid-db, kept }
+    record art-file { path: string, size: u64, modified: s64 }
+    variant art-place { file(art-file), url(string) }
+    record art-candidate {
+        slot: art-slot,
+        origin: art-origin,
+        place: art-place,
+        shows-title: bool,
+        revalidate: bool,
+    }
+
+    enum genre {
+        action, adventure, arcade, card-and-board, casual, fighting, hack-and-slash, indie,
+        massively-multiplayer, moba, music, pinball, platform, point-and-click, puzzle, quiz,
+        racing, real-time-strategy, role-playing, shooter, simulation, sports, strategy,
+        tactical, turn-based-strategy, visual-novel,
+    }
+    enum held { installed, owned, not-owned, listed }
+    record dlc { key: string, name: string, held: held }
+    record facts {
+        year: option<u16>,
+        developer: option<string>,
+        genre: option<genre>,
+        full-controller: bool,
+        deck-verified: bool,
+        dlc: list<dlc>,
+        tagline: option<string>,
+        tags: list<u32>,
+    }
+
+    record store-game {
+        key: string,
+        title: string,
+        install: install,
+        play: option<store-play>,
+        place: game-place,
+        art: list<art-candidate>,
+        facts: facts,
+    }
+
+    enum state-line { running, held }
+    record downloads { client: bool, lines: list<tuple<string, state-line>> }
+    record free-space { drive: char, bytes: u64 }
+    enum not-installed { unlisted, owned, played-before }
+    record folder { id: u64, name: string }
+    record reading {
+        whole: bool,
+        partial: bool,
+        games: list<store-game>,
+        written: option<s64>,
+        downloads: downloads,
+        free: option<free-space>,
+        not-installed: not-installed,
+        folders: list<folder>,
+    }
+    record scanned { reading: reading, watches: list<watch-spec>, notes: list<note> }
+
+    record start { %variant: option<string>, arguments: string }
+    record program { program: string, arguments: string, directory: string, within: string }
+    /// `LaunchPlan`.
+    variant launch { uri(string), program(program) }
+    variant plan-error { store-not-found, no-game(string), unreadable(string) }
+
+    variant visit { install(string), show(string), uninstall(string), store-page(string) }
+
+    /// `RunningHint`.
+    record hint { app: option<string>, client-pid: option<u32> }
+}
+
+/// `StoreRuntime` and its `StoreReader`.
+interface runtime {
+    use types.{detection, scanned, scan-depth, start, launch, plan-error, visit, hint};
+
+    detect: func() -> detection;
+
+    resource reader {
+        constructor(cache-dir: string);
+        scan: func(found: detection, depth: scan-depth) -> scanned;
+    }
+
+    launch-plan: func(key: string, start: start) -> result<launch, plan-error>;
+    links: func(visit: visit) -> list<launch>;
+    client-installed: func() -> bool;
+    running-hint: func() -> hint;
+}
+
+world plugin {
+    import kidou:host/host@1.0.0;
+    import kidou:host/sqlite@1.0.0;
+    export runtime;
+}

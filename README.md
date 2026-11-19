@@ -120,6 +120,10 @@ Rules every category keeps:
 - Only a `source` plugin asks hosts over the network, and only the `https` hosts it names.
 - A grant can carry a reason for the player, in English and German, each at most 80 characters. A plugin on Kidō's list needs a clear one.
 
+The interfaces of the WebAssembly categories are in [`wit/`](wit).
+[`devices/onexconsole`](devices/onexconsole) is a device plugin built on them: it shows OneXConsole's presets on a OneXPlayer and opens OneXConsole.
+It isn't on Kidō's list yet.
+
 ### The Manifest
 
 Every `plugin.toml` starts the same way:
@@ -220,6 +224,8 @@ The same folder always gives the same file.
 ```
 index.toml       Kidō's list: each plugin's id, name, category, version, package and SHA-256
 layouts/<id>/    the source of each Home layout
+devices/<id>/    the source of each device plugin
+wit/             the interfaces of the WebAssembly categories
 packages/        every listed package; a file here never changes
 xtask/           the check and the packer that CI runs
 ```

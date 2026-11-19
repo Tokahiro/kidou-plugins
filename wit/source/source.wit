@@ -1,0 +1,35 @@
+// A source plugin: art and facts for any game, in WIT, on the `http` import of `kidou:host`
+// (../deps/host). Kidō calls it only while the player has it on, for the game whose art or page
+// it needs, and keeps what it gives.
+package kidou:source@1.0.0;
+
+interface types {
+    enum language { english, german }
+
+    /// The game asked about: its store's id, its key in that store, and its title.
+    record game { store: string, key: string, title: string }
+
+    /// Which of the game's pictures a piece of art is: Home's square tile, the Library's cover,
+    /// the background behind Home and the game page, or the logo on transparency.
+    enum art-kind { square, cover, hero, logo }
+
+    /// A picture at an `https` address of one of the plugin's art hosts (`[grants] hosts`).
+    record art { kind: art-kind, url: string }
+
+    /// A row of facts on the game's page: its label and its value, in the language asked for.
+    record fact { label: string, value: string }
+
+    record found { art: list<art>, facts: list<fact> }
+}
+
+interface lookup {
+    use types.{language, game, found};
+
+    /// What the source knows of `game`, the best art first.
+    about: func(game: game, language: language) -> found;
+}
+
+world source {
+    import kidou:host/http@1.0.0;
+    export lookup;
+}

@@ -4,3 +4,5 @@
 channel = "1.100.0"
 profile = "minimal"
 components = ["clippy", "rustfmt"]
+# The plugins with code are built for it.
+targets = ["wasm32-wasip2"]
