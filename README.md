@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="layouts/shadowplay/preview.png" alt="Kidō's Home on the layout Schattenspiel" width="100%">
+  <img src="layouts/shadowplay/home.png" alt="Kidō's Home on the layout Schattenspiel" width="100%">
 </p>
 
 A plugin adds one thing to Kidō: a store, a Home layout, a look, or support for a device.
@@ -25,31 +25,31 @@ The pack **Alle Startseiten** installs all five at once.
 <table>
   <tr>
     <td width="50%">
-      <img src="layouts/moonlight/preview.png" alt="The layout Mondlicht"><br>
+      <img src="layouts/moonlight/home.png" alt="The layout Mondlicht"><br>
       <b>Mondlicht</b> · <a href="layouts/moonlight">source</a><br>
       The selected game's large cover in the middle of a still carousel.
     </td>
     <td width="50%">
-      <img src="layouts/dreamscape/preview.png" alt="The layout Traumbild"><br>
+      <img src="layouts/dreamscape/home.png" alt="The layout Traumbild"><br>
       <b>Traumbild</b> · <a href="layouts/dreamscape">source</a><br>
       A row of large square covers under the game's art.
     </td>
   </tr>
   <tr>
     <td>
-      <img src="layouts/procession/preview.png" alt="The layout Prozession"><br>
+      <img src="layouts/procession/home.png" alt="The layout Prozession"><br>
       <b>Prozession</b> · <a href="layouts/procession">source</a><br>
       The selected game's cover large on a lit stage, with store tabs.
     </td>
     <td>
-      <img src="layouts/shadowplay/preview.png" alt="The layout Schattenspiel"><br>
+      <img src="layouts/shadowplay/home.png" alt="The layout Schattenspiel"><br>
       <b>Schattenspiel</b> · <a href="layouts/shadowplay">source</a><br>
       The art framed by page lanes at both edges.
     </td>
   </tr>
   <tr>
     <td>
-      <img src="layouts/shrine/preview.png" alt="The layout Schrein"><br>
+      <img src="layouts/shrine/home.png" alt="The layout Schrein"><br>
       <b>Schrein</b> · <a href="layouts/shrine">source</a><br>
       The pages in a rail at the left, with group tabs.
     </td>
