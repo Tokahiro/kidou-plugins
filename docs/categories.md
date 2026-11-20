@@ -5,6 +5,7 @@ Kidō installs it from a package, a `.kidouplug` file.
 
 Each plugin is in exactly one category, and each category has its own interface and rules.
 A plugin that wants two things ships as two plugins.
+A plugin with code runs in a sandbox and reaches only what its manifest asks for.
 
 | Category | Adds | Built with | May ask for | Runs |
 | --- | --- | --- | --- | --- |

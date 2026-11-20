@@ -79,6 +79,8 @@ Kidō hasn't checked a plugin that isn't on its list.
 To install one, turn on external plugins under Settings › Stores.
 Then press Y on the Plugins page and choose the `.kidouplug` file or the plugin's folder.
 
+Kidō refuses a listed package whose SHA-256 differs from the one in `index.toml`.
+
 ## Write a Plugin
 
 - [Plugin categories](docs/categories.md): what each category may do, and the manifest `plugin.toml`.
