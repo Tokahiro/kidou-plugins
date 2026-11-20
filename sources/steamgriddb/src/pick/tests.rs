@@ -13,7 +13,6 @@ fn image(id: u64, score: i64, upvotes: i64, size: (u32, u32)) -> Image {
         mime: "image/png".to_owned(),
         url: format!("https://cdn.example/{id}.png"),
         upvotes,
-        downvotes: 0,
     }
 }
 

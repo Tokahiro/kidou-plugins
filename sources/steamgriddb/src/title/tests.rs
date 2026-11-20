@@ -4,7 +4,6 @@ fn game(id: u64, name: &str, verified: bool) -> Game {
     Game {
         id,
         name: name.to_owned(),
-        types: vec!["gog".to_owned()],
         verified,
     }
 }

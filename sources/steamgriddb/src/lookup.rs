@@ -8,7 +8,7 @@
 
 use std::fmt;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use crate::api::{self, ApiRequest, Kind};
 use crate::json::{self, AnswerError};
@@ -18,7 +18,9 @@ use crate::title;
 /// The key of the setting that holds the player's key.
 pub const KEY: &str = "api_key";
 
-/// The least time between the starts of two requests of the API within one call.
+/// The least time between the starts of two requests of the API, and between a call's start and
+/// its first request: Kidō makes calls back to back, each in a new instance that cannot know
+/// when the call before it last asked.
 pub const PACE: Duration = Duration::from_secs(1);
 
 /// How many seconds SteamGridDB is left alone when it asks for that without saying how long.
@@ -33,18 +35,18 @@ pub const KEPT: usize = 3;
 /// The longest text of SteamGridDB's or the network's kept in a failure.
 const TEXT_MAX: usize = 200;
 
-/// The game asked about: its store's id, its key in that store, and its title.
+/// The game asked about: its store's id, its id in that store, and its title.
 #[derive(Debug, Clone, Copy)]
 pub struct Game<'a> {
     pub store: &'a str,
-    pub key: &'a str,
+    pub id: &'a str,
     pub title: &'a str,
 }
 
 /// Why there is no answer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Problem {
-    /// SteamGridDB refused the key, or it is not of a key's shape.
+    /// There is no key, SteamGridDB refused it, or it is not of a key's shape.
     Refused,
     /// SteamGridDB asks to be left alone for this many seconds.
     Later(u32),
@@ -61,14 +63,77 @@ pub struct Response {
 }
 
 impl Response {
-    /// The seconds of a `Retry-After` given as a number; `None` without one, or for a date.
-    fn retry_after(&self) -> Option<u32> {
-        let (_, value) =
-            (self.headers.iter()).find(|(name, _)| name.eq_ignore_ascii_case("retry-after"))?;
-        let value = value.trim();
-        (!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
-            .then(|| value.parse().unwrap_or(u32::MAX))
+    /// The first header named `name`, in any case.
+    fn header(&self, name: &str) -> Option<&str> {
+        (self.headers.iter())
+            .find(|(known, _)| known.eq_ignore_ascii_case(name))
+            .map(|(_, value)| value.as_str())
     }
+
+    /// `Retry-After`, in seconds: a number of them, or a date, counted from the answer's `Date`
+    /// or else from now.
+    fn retry_after(&self) -> Option<u32> {
+        let value = self.header("Retry-After")?.trim();
+        if !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Some(value.parse().unwrap_or(u32::MAX));
+        }
+        let until = http_date(value)?;
+        let now = (self.header("Date"))
+            .and_then(http_date)
+            .unwrap_or_else(|| {
+                SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .map_or(0, |since| since.as_secs())
+            });
+        Some(u32::try_from(until.saturating_sub(now)).unwrap_or(u32::MAX))
+    }
+}
+
+/// An HTTP date in the form every server sends (RFC 9110's IMF-fixdate,
+/// `Sun, 06 Nov 1994 08:49:37 GMT`), as seconds since 1970.
+fn http_date(value: &str) -> Option<u64> {
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    let [_, day, month, year, time, "GMT"] = *value.split_ascii_whitespace().collect::<Vec<_>>()
+    else {
+        return None;
+    };
+    let day: u64 = day.parse().ok().filter(|day| (1..=31).contains(day))?;
+    let month = u64::try_from(MONTHS.iter().position(|name| *name == month)?).ok()?;
+    let year: u64 = (year.parse().ok()).filter(|year| (1970..=9999).contains(year))?;
+    let [hours, minutes, seconds] = *(time.split(':'))
+        .map(|part| part.parse::<u64>().ok())
+        .collect::<Option<Vec<_>>>()?
+    else {
+        return None;
+    };
+    // 60 is a leap second.
+    if hours > 23 || minutes > 59 || seconds > 60 {
+        return None;
+    }
+    // Days since 1970 by the civil calendar (Howard Hinnant's `days_from_civil`), with the year
+    // starting in March so that a leap day ends it.
+    let (year, month) = match month.checked_sub(2) {
+        Some(month) => (year, month),
+        None => (year.checked_sub(1)?, month.checked_add(10)?),
+    };
+    let era = year.checked_div(400)?;
+    let of_era = year.checked_rem(400)?;
+    let of_year = (month.checked_mul(153)?.checked_add(2)?.checked_div(5)?)
+        .checked_add(day)?
+        .checked_sub(1)?;
+    let of_cycle = (of_era.checked_mul(365)?)
+        .checked_add(of_era.checked_div(4)?)?
+        .checked_sub(of_era.checked_div(100)?)?
+        .checked_add(of_year)?;
+    let days = (era.checked_mul(146_097)?)
+        .checked_add(of_cycle)?
+        .checked_sub(719_468)?;
+    (days.checked_mul(86_400)?)
+        .checked_add(hours.checked_mul(3_600)?)?
+        .checked_add(minutes.checked_mul(60)?)?
+        .checked_add(seconds)
 }
 
 /// Why the network gave no answer, as the host's `http` says it.
@@ -120,8 +185,8 @@ impl Clock for SystemClock {
 /// The art of `game` of the `kinds` asked for, through `http`, one request at a time and at most
 /// one a second ([`PACE`]), the [`KEPT`] best of each kind in the order the kinds are asked for.
 ///
-/// `key` is the setting [`KEY`] as the player typed it in: empty, nothing is asked and nothing
-/// found; not of a key's shape, or refused with a 401 or 403, it is [`Problem::Refused`]. A 404
+/// `key` is the setting [`KEY`] as the player typed it in. Empty or not of a key's shape, it is
+/// [`Problem::Refused`] without a request; refused with a 401 or 403, it is too. A 404
 /// for the game, or no picture of any kind, finds nothing. A 429 or 5xx is [`Problem::Later`].
 /// Anything else that goes wrong is [`Problem::Failed`].
 pub fn about(
@@ -132,16 +197,14 @@ pub fn about(
     key: &str,
 ) -> Result<Vec<Picked>, Problem> {
     let key = key.trim();
-    if key.is_empty() {
-        return Ok(Vec::new());
-    }
     if !shaped(key) {
         return Err(Problem::Refused);
     }
+    let start = clock.now();
     let mut lookup = Lookup {
         http,
         clock,
-        last: None,
+        last: start,
         bearer: format!("Bearer {key}"),
     };
     lookup.find(game, kinds).map_err(|problem| match problem {
@@ -159,8 +222,8 @@ fn shaped(key: &str) -> bool {
 struct Lookup<'a> {
     http: &'a mut dyn Http,
     clock: &'a mut dyn Clock,
-    /// When the last request started.
-    last: Option<Instant>,
+    /// When the last request, or else the call, started.
+    last: Instant,
     bearer: String,
 }
 
@@ -175,11 +238,11 @@ impl Lookup<'_> {
             .map(|&(_, platform)| platform);
         let (platform, id) = match platform {
             Some(platform) if api::ART_PLATFORMS.contains(&platform) => {
-                (platform, game.key.to_owned())
+                (platform, game.id.to_owned())
             }
             platform => {
                 let by_id = match platform {
-                    Some(platform) => self.by_id(platform, game.key)?,
+                    Some(platform) => self.by_id(platform, game.id)?,
                     None => None,
                 };
                 let found = match by_id {
@@ -197,9 +260,7 @@ impl Lookup<'_> {
             let request = api::art(kind, platform, &id);
             match self.send(&request)? {
                 Reply::Answer(body) => {
-                    let listings =
-                        json::listings(&body).map_err(|error| unread(&request, error))?;
-                    let images = listings.into_iter().next().unwrap_or_default();
+                    let images = json::images(&body).map_err(|error| unread(&request, error))?;
                     picked.extend(pick(kind, &images).into_iter().take(KEPT));
                 }
                 // The platform's id is not known: no other kind will be either.
@@ -268,17 +329,16 @@ impl Lookup<'_> {
         })
     }
 
-    /// Waits until [`PACE`] has passed since the last request started.
+    /// Waits until [`PACE`] has passed since the last request, or else the call, started.
     fn pace(&mut self) {
         let now = self.clock.now();
-        let wait = (self.last)
-            .and_then(|last| last.checked_add(PACE))
+        let wait = (self.last.checked_add(PACE))
             .and_then(|next| next.checked_duration_since(now))
             .filter(|wait| !wait.is_zero());
         if let Some(wait) = wait {
             self.clock.sleep(wait);
         }
-        self.last = Some(self.clock.now());
+        self.last = self.clock.now();
     }
 }
 

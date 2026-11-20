@@ -21,10 +21,6 @@ const FIXTURES: &[(&str, &[u8])] = &[
         include_bytes!("../../tests/fixtures/grids-cover.json"),
     ),
     (
-        "grids-multi.json",
-        include_bytes!("../../tests/fixtures/grids-multi.json"),
-    ),
-    (
         "grids-square.json",
         include_bytes!("../../tests/fixtures/grids-square.json"),
     ),
@@ -150,11 +146,11 @@ impl Rig {
     fn look_up(
         &mut self,
         store: &str,
-        key: &str,
+        id: &str,
         title: &str,
         kinds: &[Kind],
     ) -> Result<Vec<Picked>, Problem> {
-        let game = Game { store, key, title };
+        let game = Game { store, id, title };
         about(&mut self.http, &mut self.clock, &game, kinds, &self.key)
     }
 
@@ -247,18 +243,10 @@ fn a_request_is_named_by_its_endpoint_without_the_title() {
 }
 
 #[test]
-fn without_a_key_nothing_is_asked_and_nothing_found() {
-    for key in ["", "  \t"] {
-        let mut rig = steam_rig();
-        rig.key = key.to_owned();
-        assert_eq!(rig.steam("620", ALL), Ok(Vec::new()));
-        assert_eq!(rig.urls(), Vec::<String>::new());
-    }
-}
-
-#[test]
-fn a_key_not_of_a_keys_shape_is_refused_without_a_request() {
+fn a_missing_key_or_one_not_of_a_keys_shape_is_refused_without_a_request() {
     for key in [
+        "",
+        "  \t",
         "short",
         "fake fake fake fake fake",
         "fake\r\nX-Other: 1fakefakefake",
@@ -367,19 +355,6 @@ fn pictures_are_ordered_by_score_then_upvotes_then_size_and_verified_plays_no_pa
 }
 
 #[test]
-fn an_answer_for_several_ids_gives_the_first_ids_pictures() {
-    let listings = json::listings(fixture("grids-multi.json")).unwrap();
-    assert_eq!(listings.len(), 2);
-    assert_eq!(listings[0].len(), 2);
-    assert_eq!(listings[1], []);
-
-    let mut rig = Rig::new();
-    rig.answer(&square("steam", "620"), ok("grids-multi.json"));
-    let found = rig.steam("620", &[Kind::Square]);
-    assert_eq!(names(&found), [named(1402, "png"), named(1401, "png")]);
-}
-
-#[test]
 fn nothing_of_any_kind_finds_nothing() {
     let mut rig = Rig::new();
     for url in [
@@ -481,15 +456,54 @@ fn server_errors_are_later_and_retry_after_is_kept_within_a_second_and_an_hour()
 }
 
 #[test]
-fn a_retry_after_that_is_no_number_of_seconds_is_the_first_wait() {
-    let mut rig = steam_rig();
-    let mut busy = answer(503, b"", None);
-    busy.headers.push((
-        "retry-after".to_owned(),
-        "Wed, 21 Oct 2015 07:28:00 GMT".to_owned(),
-    ));
-    rig.answer(&square("steam", "620"), busy);
-    assert_eq!(rig.steam("620", ALL), Err(Problem::Later(LATER_FIRST)));
+fn a_retry_after_date_is_counted_from_the_answers_date_and_anything_else_is_the_first_wait() {
+    let date = "Wed, 21 Oct 2015 07:28:00 GMT";
+    for (retry_after, wait) in [
+        ("Wed, 21 Oct 2015 08:28:00 GMT", 3600),
+        ("Wed, 21 Oct 2015 07:30:00 GMT", 120),
+        ("Wed, 21 Oct 2015 07:00:00 GMT", 1),
+        ("Thu, 22 Oct 2015 07:28:00 GMT", LATER_MAX),
+        ("soon", LATER_FIRST),
+        ("-1", LATER_FIRST),
+        ("", LATER_FIRST),
+    ] {
+        let mut rig = steam_rig();
+        let mut busy = answer(503, b"", None);
+        busy.headers.extend([
+            ("date".to_owned(), date.to_owned()),
+            ("retry-after".to_owned(), retry_after.to_owned()),
+        ]);
+        rig.answer(&square("steam", "620"), busy);
+        assert_eq!(
+            rig.steam("620", ALL),
+            Err(Problem::Later(wait)),
+            "{retry_after:?}"
+        );
+    }
+}
+
+#[test]
+fn an_http_date_is_read_by_the_civil_calendar() {
+    assert_eq!(http_date("Thu, 01 Jan 1970 00:00:10 GMT"), Some(10));
+    assert_eq!(
+        http_date("Sun, 06 Nov 1994 08:49:37 GMT"),
+        Some(784_111_777)
+    );
+    assert_eq!(
+        http_date("Tue, 29 Feb 2028 00:00:00 GMT"),
+        Some(1_835_395_200)
+    );
+    for other in [
+        "Sunday, 06-Nov-94 08:49:37 GMT",
+        "Sun Nov  6 08:49:37 1994",
+        "Sun, 06 Nov 1994 08:49:37 CET",
+        "Sun, 06 Nov 1994 08:49 GMT",
+        "Sun, 06 Nov 1994 99999999999999999:00:00 GMT",
+        "Sun, 06 Nov 18446744073709551615 08:49:37 GMT",
+        "Sun, 06 Nov 1994 24:00:00 GMT",
+    ] {
+        assert_eq!(http_date(other), None, "{other}");
+    }
 }
 
 #[test]
@@ -501,15 +515,24 @@ fn a_wait_asked_for_midway_drops_what_was_found() {
 }
 
 #[test]
-fn requests_of_one_call_start_at_least_a_second_apart() {
+fn requests_start_at_least_a_second_apart_within_a_call_and_across_calls() {
     let mut rig = steam_rig();
     let _ = rig.steam("620", ALL);
-    assert_eq!(rig.clock.slept, [PACE, PACE]);
+    assert_eq!(rig.clock.slept, [PACE, PACE, PACE]);
     let _ = rig.steam("620", &[Kind::Square]);
     assert_eq!(
+        rig.clock.slept,
+        [PACE, PACE, PACE, PACE],
+        "a call's first request waits as if the call before it had just asked"
+    );
+    rig.clock.now += PACE / 2;
+    let _ = rig.steam("620", &[Kind::Square]);
+    assert_eq!(rig.clock.slept.last(), Some(&PACE));
+    let _ = rig.steam("620", &[]);
+    assert_eq!(
         rig.clock.slept.len(),
-        2,
-        "a call's first request does not wait"
+        5,
+        "a call without a request does not wait"
     );
 }
 
@@ -768,11 +791,9 @@ fn mutants_of_every_fixture_are_read_without_a_panic() {
     for (at, (_, bytes)) in FIXTURES.iter().enumerate() {
         let seed = 0x5347_4442_0000 + u64::try_from(at).unwrap();
         for mutant in mutate(seed, bytes, 1_000) {
-            if let Ok(listings) = json::listings(&mutant) {
-                for images in &listings {
-                    for &kind in ALL {
-                        pick(kind, images);
-                    }
+            if let Ok(images) = json::images(&mutant) {
+                for &kind in ALL {
+                    pick(kind, &images);
                 }
             }
             if let Ok(found) = json::games(&mutant) {

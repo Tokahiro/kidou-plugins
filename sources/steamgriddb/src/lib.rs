@@ -51,6 +51,28 @@ mod plugin {
 
     struct SteamGridDb;
 
+    impl From<ArtKind> for Kind {
+        fn from(kind: ArtKind) -> Self {
+            match kind {
+                ArtKind::Square => Self::Square,
+                ArtKind::Cover => Self::Cover,
+                ArtKind::Hero => Self::Hero,
+                ArtKind::Logo => Self::Logo,
+            }
+        }
+    }
+
+    impl From<Kind> for ArtKind {
+        fn from(kind: Kind) -> Self {
+            match kind {
+                Kind::Square => Self::Square,
+                Kind::Cover => Self::Cover,
+                Kind::Hero => Self::Hero,
+                Kind::Logo => Self::Logo,
+            }
+        }
+    }
+
     /// The host's `http`.
     struct Host;
 
@@ -88,17 +110,10 @@ mod plugin {
                     Value::Switch(_) | Value::Choice(_) => None,
                 })
                 .unwrap_or_default();
-            let kinds = (wanted.art.iter())
-                .map(|kind| match kind {
-                    ArtKind::Square => Kind::Square,
-                    ArtKind::Cover => Kind::Cover,
-                    ArtKind::Hero => Kind::Hero,
-                    ArtKind::Logo => Kind::Logo,
-                })
-                .collect::<Vec<_>>();
+            let kinds = (wanted.art.into_iter()).map(Kind::from).collect::<Vec<_>>();
             let asked = lookup::Game {
                 store: &game.store,
-                key: &game.key,
+                id: &game.key,
                 title: &game.title,
             };
             let picked = lookup::about(&mut Host, &mut SystemClock, &asked, &kinds, key).map_err(
@@ -110,12 +125,7 @@ mod plugin {
             )?;
             let art = (picked.into_iter())
                 .map(|picked| Art {
-                    kind: match picked.kind {
-                        Kind::Square => ArtKind::Square,
-                        Kind::Cover => ArtKind::Cover,
-                        Kind::Hero => ArtKind::Hero,
-                        Kind::Logo => ArtKind::Logo,
-                    },
+                    kind: picked.kind.into(),
                     url: picked.url,
                     titled: picked.titled,
                 })

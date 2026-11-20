@@ -43,8 +43,6 @@ pub struct Image {
     pub url: String,
     #[serde(default, deserialize_with = "or_default")]
     pub upvotes: i64,
-    #[serde(default, deserialize_with = "or_default")]
-    pub downvotes: i64,
 }
 
 /// A game a search found, or the game an id names.
@@ -53,8 +51,6 @@ pub struct Game {
     pub id: u64,
     #[serde(default, deserialize_with = "or_default")]
     pub name: String,
-    #[serde(default, deserialize_with = "texts")]
-    pub types: Vec<String>,
     #[serde(default, deserialize_with = "or_default")]
     pub verified: bool,
 }
@@ -68,28 +64,11 @@ pub enum AnswerError {
     Unsuccessful(Vec<String>),
 }
 
-/// The pictures of each id a request of `/grids`, `/heroes`, … asked for: one listing for one
-/// id, and for several ids (`/grids/steam/620,730`) one per id in the order asked, an id that
-/// failed giving an empty listing.
-pub fn listings(body: &[u8]) -> Result<Vec<Vec<Image>>, AnswerError> {
-    let items = successful::<Vec<Value>>(body)?.unwrap_or_default();
-    let several = items
-        .first()
-        .and_then(Value::as_object)
-        .is_some_and(|first| first.contains_key("success"));
-    if !several {
-        return Ok(vec![read_all(items)]);
-    }
-    Ok(items
-        .into_iter()
-        .map(|item| {
-            serde_json::from_value::<Answer<Vec<Value>>>(item)
-                .ok()
-                .filter(|answer| answer.success)
-                .and_then(|answer| answer.data)
-                .map_or_default(read_all)
-        })
-        .collect())
+/// The pictures of an answer of `/grids`, `/heroes`, … for one id.
+pub fn images(body: &[u8]) -> Result<Vec<Image>, AnswerError> {
+    Ok(read_all(
+        successful::<Vec<Value>>(body)?.unwrap_or_default(),
+    ))
 }
 
 /// The game of an answer of `/games/<platform>/<id>`; `None` when it names none.

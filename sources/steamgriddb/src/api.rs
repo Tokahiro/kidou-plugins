@@ -6,21 +6,10 @@ use std::fmt::Write as _;
 /// The API's base; every request starts with it.
 pub const BASE: &str = "https://www.steamgriddb.com/api/v2";
 
-/// The API's host, the only one that is sent the key.
-pub const HOST: &str = "www.steamgriddb.com";
-
-/// The platforms whose own ids the art endpoints take (`/grids/<platform>/<id>`), as the API's
-/// documentation lists them. A game of another platform is first found by its id through
+/// The platforms of [`PLATFORMS`] whose own ids the art endpoints take
+/// (`/grids/<platform>/<id>`). A game of another platform is first found by its id through
 /// `/games/<platform>/<id>`, else by its title.
-pub const ART_PLATFORMS: &[&str] = &[
-    "steam",
-    "origin",
-    "egs",
-    "bnet",
-    "uplay",
-    "flashpoint",
-    "eshop",
-];
+pub const ART_PLATFORMS: &[&str] = &["steam"];
 
 /// The platform at SteamGridDB of each store whose ids it knows, by the store's id.
 pub const PLATFORMS: &[(&str, &str)] = &[("steam", "steam"), ("gog", "gog")];

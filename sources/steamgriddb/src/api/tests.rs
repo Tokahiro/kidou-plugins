@@ -62,7 +62,7 @@ fn nothing_in_a_request_leaves_the_api_host() {
             search(text).url(),
         ];
         for url in urls {
-            assert_eq!(host(&url), HOST, "{url}");
+            assert_eq!(host(&url), "www.steamgriddb.com", "{url}");
             assert!(url.starts_with(&format!("{BASE}/")), "{url}");
             let path = url[BASE.len()..].split('?').next().unwrap();
             assert!(!path.contains(['#', '\\', '@']), "{url}");
