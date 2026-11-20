@@ -26,21 +26,18 @@ pub struct Credentials {
 }
 
 impl Credentials {
-    /// The credentials in the settings' texts, each without the white space around it; none
-    /// while either is empty. A text that is no key (20 to 64 ASCII letters and digits, as
-    /// Kidō's own settings take) is refused under its setting's key, unsent.
+    /// The credentials in the settings' texts; none while either is empty. A text that could
+    /// not stand in the token form as it is, with more than ASCII letters and digits, is
+    /// refused under its setting's key, unsent.
     pub fn of(id: &str, secret: &str) -> Result<Option<Self>, String> {
-        let (id, secret) = (id.trim(), secret.trim());
         if id.is_empty() || secret.is_empty() {
             return Ok(None);
         }
-        let key = |text: &str| {
-            (20..=64).contains(&text.len()) && text.bytes().all(|b| b.is_ascii_alphanumeric())
-        };
-        if !key(id) {
+        let form_safe = |text: &str| text.bytes().all(|b| b.is_ascii_alphanumeric());
+        if !form_safe(id) {
             return Err(CLIENT_ID.to_owned());
         }
-        if !key(secret) {
+        if !form_safe(secret) {
             return Err(CLIENT_SECRET.to_owned());
         }
         Ok(Some(Self {
@@ -201,15 +198,15 @@ mod tests {
     }
 
     #[test]
-    fn credentials_are_both_keys_or_none() {
+    fn credentials_are_both_form_safe_texts_or_none() {
         let id = "fakeclientid000000000000000001";
         let secret = "fakeclientsecret00000000000001";
         assert!(matches!(Credentials::of("", secret), Ok(None)));
-        assert!(matches!(Credentials::of(id, "  "), Ok(None)));
-        let trimmed = Credentials::of(&format!(" {id}\n"), secret);
-        assert!(matches!(trimmed, Ok(Some(ref both)) if both.id == id && both.secret == secret));
+        assert!(matches!(Credentials::of(id, ""), Ok(None)));
+        let both = Credentials::of(id, secret);
+        assert!(matches!(both, Ok(Some(ref both)) if both.id == id && both.secret == secret));
         for (id, secret, key) in [
-            ("short", secret, "client_id"),
+            (" id\n", secret, "client_id"),
             (id, "fakeclientsecret0000000000&x=1", "client_secret"),
             (id, "fake client secret 0000000001", "client_secret"),
         ] {

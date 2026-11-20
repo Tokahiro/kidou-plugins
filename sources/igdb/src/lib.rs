@@ -31,7 +31,7 @@ use facts::{Language, Row};
 /// What Kidō asks of a game, with the settings' texts.
 pub struct Ask<'a> {
     pub store: &'a str,
-    pub key: &'a str,
+    pub store_id: &'a str,
     /// Whether the game's page shows, which needs the facts.
     pub facts: bool,
     pub language: Language,
@@ -39,7 +39,7 @@ pub struct Ask<'a> {
     pub client_secret: &'a str,
 }
 
-/// The rows of facts IGDB tells for `ask`. Nothing, and no request, while the facts are not
+/// The row of facts IGDB tells for `ask`, if any. Nothing, and no request, while the facts are not
 /// wanted, a setting is empty or the game's store has no source at IGDB.
 pub fn about(http: &mut dyn Post, ask: &Ask<'_>) -> Result<Vec<Row>, Problem> {
     if !ask.facts {
@@ -52,8 +52,10 @@ pub fn about(http: &mut dyn Post, ask: &Ask<'_>) -> Result<Vec<Row>, Problem> {
     let Some(source) = api::source(ask.store) else {
         return Ok(Vec::new());
     };
-    let beat = beats::time_to_beat(http, ask.key, source, &credentials)?;
-    Ok(beat.map_or_else(Vec::new, |beat| facts::rows(beat, ask.language)))
+    let beat = beats::time_to_beat(http, ask.store_id, source, &credentials)?;
+    Ok(Vec::from_iter(
+        beat.and_then(|beat| facts::row(beat, ask.language)),
+    ))
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -120,7 +122,7 @@ mod plugin {
         ) -> Result<Found, Problem> {
             let ask = crate::Ask {
                 store: &game.store,
-                key: &game.key,
+                store_id: &game.key,
                 facts: wanted.facts,
                 language: match language {
                     Language::English => crate::Language::English,

@@ -88,10 +88,10 @@ fn portal(http: &mut FakeHttp) {
     );
 }
 
-fn ask<'a>(store: &'a str, key: &'a str) -> Ask<'a> {
+fn ask<'a>(store: &'a str, store_id: &'a str) -> Ask<'a> {
     Ask {
         store,
-        key,
+        store_id,
         facts: true,
         language: Language::English,
         client_id: CLIENT_ID,
@@ -107,11 +107,7 @@ fn row(label: &str, value: &str) -> Row {
 }
 
 fn portal_rows() -> Vec<Row> {
-    vec![
-        row("Main story", "≈ 8 h"),
-        row("With extras", "≈ 10 h"),
-        row("Everything", "≈ 20 h"),
-    ]
+    vec![row("Main story", "≈ 8 h")]
 }
 
 #[test]
@@ -159,7 +155,7 @@ fn a_token_then_the_game_by_its_store_id_then_its_times() {
 }
 
 #[test]
-fn german_rows_and_a_gog_game_under_igdb_s_source_5() {
+fn a_german_row_and_a_gog_game_under_igdb_s_source_5() {
     let mut http = FakeHttp::default();
     portal(&mut http);
     let german = Ask {
@@ -168,11 +164,7 @@ fn german_rows_and_a_gog_game_under_igdb_s_source_5() {
     };
     assert_eq!(
         about(&mut http, &german),
-        Ok(vec![
-            row("Hauptstory", "≈ 8 Std."),
-            row("Mit Extras", "≈ 10 Std."),
-            row("Komplett", "≈ 20 Std."),
-        ])
+        Ok(vec![row("Hauptstory", "≈ 8 Std.")])
     );
     assert!(http.posted[1].body.contains("external_game_source = 5;"));
 }
@@ -200,7 +192,7 @@ fn nothing_is_asked_without_the_facts_both_settings_or_an_igdb_source() {
             ..ask("steam", "620")
         },
         Ask {
-            client_secret: " ",
+            client_secret: "",
             ..ask("steam", "620")
         },
         ask("epic", "620"),
@@ -333,6 +325,13 @@ fn empty_answers() {
             vec![ok(r#"[{"id":3,"hastily":5400}]"#)],
             Ok(vec![row("Main story", "≈ 2 h")]),
         ),
+        (
+            "IGDB tells no main story",
+            vec![token(TOKEN_ONE)],
+            vec![ok(r#"[{"id":9,"game":72}]"#)],
+            vec![ok(r#"[{"id":3,"normally":9000,"completely":18000}]"#)],
+            Ok(vec![row("With extras", "≈ 3 h")]),
+        ),
     ]);
 }
 
@@ -345,6 +344,45 @@ fn wishes_to_wait_and_failures() {
             vec![answer(429, &[("Retry-After", "4")], "")],
             vec![],
             Err(Problem::Later(4)),
+        ),
+        (
+            "IGDB asks to wait until a date",
+            vec![token(TOKEN_ONE)],
+            vec![answer(
+                503,
+                &[
+                    ("Date", "Sun, 22 Nov 2026 09:00:00 GMT"),
+                    ("Retry-After", "Sun, 22 Nov 2026 10:00:00 GMT"),
+                ],
+                "",
+            )],
+            vec![],
+            Err(Problem::Later(3600)),
+        ),
+        (
+            "Twitch asks to wait until a leap day, a year on",
+            vec![answer(
+                429,
+                &[
+                    ("date", "Thu, 29 Feb 2024 23:59:59 GMT"),
+                    ("retry-after", "Sat, 01 Mar 2025 00:00:00 GMT"),
+                ],
+                "",
+            )],
+            vec![],
+            vec![],
+            Err(Problem::Later(365 * 86_400 + 1)),
+        ),
+        (
+            "Twitch asks to wait until a date, without its own",
+            vec![answer(
+                429,
+                &[("Retry-After", "Sun, 22 Nov 2026 10:00:00 GMT")],
+                "",
+            )],
+            vec![],
+            vec![],
+            Err(Problem::Later(10)),
         ),
         (
             "Twitch is down",

@@ -1,4 +1,4 @@
-//! The time to beat as rows of facts, worded as Kidō's game page words it, under the heading
+//! The time to beat as a row of facts, worded as Kidō's game page words it, under the heading
 //! „IGDB“ that Kidō gives the plugin's rows.
 
 use crate::api::TimeToBeat;
@@ -16,72 +16,69 @@ pub struct Row {
     pub value: String,
 }
 
-/// A row for each time `beat` tells, in its order: the main story, with extras, everything.
-/// Each is in whole hours, rounded to the nearest, halves up, and at least 1.
-pub fn rows(beat: TimeToBeat, language: Language) -> Vec<Row> {
+/// The one time to beat Kidō's ADR-0024 shows: the main story's, else the one with the extras,
+/// else everything's; none where `beat` tells no time. It is in whole hours, rounded to the
+/// nearest, halves up, and at least 1.
+pub fn row(beat: TimeToBeat, language: Language) -> Option<Row> {
     let labels = match language {
         Language::English => ["Main story", "With extras", "Everything"],
         Language::German => ["Hauptstory", "Mit Extras", "Komplett"],
     };
     let times = [beat.main, beat.extras, beat.complete];
-    (labels.into_iter().zip(times))
-        .filter_map(|(label, minutes)| {
-            let hours = (minutes?.saturating_add(30) / 60).max(1);
-            Some(Row {
-                label: label.to_owned(),
-                value: match language {
-                    Language::English => format!("≈ {hours} h"),
-                    Language::German => format!("≈ {hours} Std."),
-                },
-            })
-        })
-        .collect()
+    let (label, minutes) =
+        (labels.into_iter().zip(times)).find_map(|(label, minutes)| Some((label, minutes?)))?;
+    let hours = (minutes.saturating_add(30) / 60).max(1);
+    Some(Row {
+        label: label.to_owned(),
+        value: match language {
+            Language::English => format!("≈ {hours} h"),
+            Language::German => format!("≈ {hours} Std."),
+        },
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Language, Row, TimeToBeat, rows};
+    use super::{Language, Row, TimeToBeat, row};
 
-    fn row(label: &str, value: &str) -> Row {
-        Row {
+    fn told(label: &str, value: &str) -> Option<Row> {
+        Some(Row {
             label: label.to_owned(),
             value: value.to_owned(),
-        }
+        })
     }
 
     #[test]
-    fn each_time_told_is_a_row_in_whole_hours() {
-        let beat = TimeToBeat {
+    fn the_first_time_told_is_the_row_in_whole_hours() {
+        let all = TimeToBeat {
             main: Some(480),
             extras: Some(629),
             complete: Some(1230),
         };
+        assert_eq!(row(all, Language::English), told("Main story", "≈ 8 h"));
+        assert_eq!(row(all, Language::German), told("Hauptstory", "≈ 8 Std."));
+        let extras = TimeToBeat { main: None, ..all };
         assert_eq!(
-            rows(beat, Language::English),
-            [
-                row("Main story", "≈ 8 h"),
-                row("With extras", "≈ 10 h"),
-                row("Everything", "≈ 21 h"),
-            ]
+            row(extras, Language::English),
+            told("With extras", "≈ 10 h")
         );
+        let complete = TimeToBeat {
+            complete: Some(1230),
+            ..TimeToBeat::default()
+        };
         assert_eq!(
-            rows(beat, Language::German),
-            [
-                row("Hauptstory", "≈ 8 Std."),
-                row("Mit Extras", "≈ 10 Std."),
-                row("Komplett", "≈ 21 Std."),
-            ]
+            row(complete, Language::German),
+            told("Komplett", "≈ 21 Std.")
         );
     }
 
     #[test]
-    fn only_the_times_told_and_at_least_an_hour() {
-        let beat = TimeToBeat {
-            main: None,
+    fn at_least_an_hour_and_none_without_a_time() {
+        let short = TimeToBeat {
             extras: Some(5),
-            complete: None,
+            ..TimeToBeat::default()
         };
-        assert_eq!(rows(beat, Language::English), [row("With extras", "≈ 1 h")]);
-        assert_eq!(rows(TimeToBeat::default(), Language::German), Vec::new());
+        assert_eq!(row(short, Language::English), told("With extras", "≈ 1 h"));
+        assert_eq!(row(TimeToBeat::default(), Language::German), None);
     }
 }
