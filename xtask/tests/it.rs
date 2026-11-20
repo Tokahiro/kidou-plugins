@@ -439,7 +439,7 @@ fn the_interfaces_parse() {
     let wit = Path::new(env!("CARGO_MANIFEST_DIR")).join("../wit");
     let mut resolve = wit_parser::Resolve::default();
     // The folder itself is `kidou:store` with `deps/host`; a package comes after those it uses.
-    let folders = ["events", "device", "source"];
+    let folders = ["events", "device", "source", "tiles"];
     resolve.push_dir(&wit).expect("store.wit and deps/host");
     for folder in folders {
         resolve.push_dir(wit.join(folder)).expect(folder);
@@ -455,5 +455,5 @@ fn the_interfaces_parse() {
         })
         .collect();
     found.sort();
-    assert_eq!(found, ["deps", "device", "events", "source", "store.wit"]);
+    assert_eq!(found, ["deps", "device", "events", "source", "store.wit", "tiles"]);
 }
