@@ -7,7 +7,8 @@ interface types {
     enum language { english, german }
 
     /// A setting's value as the player set it, or its default: by the setting's key in the
-    /// manifest. A key the player has not typed in is an empty `text`.
+    /// manifest. A `text` is a key: 20 to 64 ASCII letters and digits, as Kidō takes it, or
+    /// empty while the player has typed in none.
     variant value { switch(bool), choice(string), text(string) }
     record setting { key: string, value: value }
 
