@@ -1,5 +1,6 @@
 # Write a Home Layout
 
+A Home layout draws the first page of Kidō (releasing soon).
 A layout is Slint code in the folder `layout` beside the manifest.
 It needs no build step:
 
