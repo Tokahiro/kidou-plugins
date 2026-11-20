@@ -1,0 +1,25 @@
+// Quick-menu tiles for a store or a source plugin, on the tile types of `kidou:events`
+// (../events). A plugin whose manifest names `[[tiles]]` exports `handler` beside its own
+// category's interface, as its world includes `tiles` beside its category's world:
+//
+//     world my-store {
+//         include kidou:store/plugin@2.0.0;
+//         include kidou:tiles/tiles@1.0.0;
+//     }
+//
+// Its settings rows and tiles are data in its manifest, which Kidō draws. A press runs in an
+// instance of its own, apart from the plugin's other calls, and gets no network: `http` answers
+// it `denied`. Kidō refuses a plugin whose manifest names tiles without this export.
+package kidou:tiles@1.0.0;
+
+interface handler {
+    use kidou:events/types@1.0.0.{language, setting, pressed};
+
+    /// The player pressed the tile `tile` of the quick menu. `settings` are the plugin's
+    /// settings, each with its value or its default.
+    press: func(tile: string, language: language, settings: list<setting>) -> pressed;
+}
+
+world tiles {
+    export handler;
+}
