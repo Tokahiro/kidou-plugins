@@ -455,5 +455,8 @@ fn the_interfaces_parse() {
         })
         .collect();
     found.sort();
-    assert_eq!(found, ["deps", "device", "events", "source", "store.wit", "tiles"]);
+    assert_eq!(
+        found,
+        ["deps", "device", "events", "source", "store.wit", "tiles"]
+    );
 }
