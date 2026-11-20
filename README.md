@@ -106,8 +106,8 @@ Kidō refuses a listed package whose SHA-256 differs from the one in `index.toml
 
 | Category | Adds | Built with | May ask for | Runs |
 | --- | --- | --- | --- | --- |
-| `store` | A store's or launcher's games, their launches and links | WebAssembly, `kidou:store` 2.x | Registry keys, folders, link schemes, art hosts | At start; dropped where its store isn't found |
-| `source` | Art and facts for any game | WebAssembly, `kidou:source` 1.x | Art hosts, `https` hosts it asks itself | At its first call |
+| `store` | A store's or launcher's games, their launches and links; settings rows and quick-menu tiles | WebAssembly, `kidou:store` 2.x | Registry keys, folders, link schemes, art hosts | At start; dropped where its store isn't found |
+| `source` | Art and facts for any game; settings rows and quick-menu tiles | WebAssembly, `kidou:source` 1.x | Art hosts, `https` hosts it asks itself | At its first call |
 | `device` | Support for a device and its maker's app: settings rows and quick-menu tiles | WebAssembly, `kidou:device` 1.x | Registry keys, folders, link schemes | Only on a device it serves |
 | `events` | Acts when a game starts or ends; settings rows and quick-menu tiles | WebAssembly, `kidou:events` 1.x | Registry keys, folders, link schemes | At the events it names |
 | `layout` | A Home layout | Slint, the layout contract 3.x | Nothing | Only while chosen |
@@ -121,6 +121,7 @@ Rules every category keeps:
 - A grant can carry a reason for the player, in English and German, each at most 80 characters. A plugin on Kidō's list needs a clear one.
 
 The interfaces of the WebAssembly categories are in [`wit/`](wit).
+A `store` or `source` plugin with tiles also exports `kidou:tiles` 1.x ([`wit/tiles`](wit/tiles)), which gets the presses.
 [`devices/onexconsole`](devices/onexconsole) is a device plugin built on them: it shows OneXConsole's presets on a OneXPlayer and opens OneXConsole.
 It isn't on Kidō's list yet.
 
