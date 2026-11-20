@@ -1,7 +1,7 @@
 # Plugin Categories
 
 A plugin is a small folder with a manifest, `plugin.toml`, and what its category needs beside it.
-Kidō installs it from a package, a `.kidouplug` file.
+Kidō (releasing soon) installs it from a package, a `.kidouplug` file.
 
 Each plugin is in exactly one category, and each category has its own interface and rules.
 A plugin that wants two things ships as two plugins.

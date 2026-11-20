@@ -1,6 +1,6 @@
 # Contributing
 
-The repository holds the source of each plugin, the packages and Kidō's list:
+The repository holds the source of each plugin, the packages and the list of official plugins for Kidō (releasing soon):
 
 ```
 index.toml       Kidō's list: each plugin's id, name, category, version, api, package and SHA-256

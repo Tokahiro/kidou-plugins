@@ -1,7 +1,7 @@
 <h1 align="center">Kidō Plugins</h1>
 
 <p align="center">
-  Stores, Home layouts and more for <b>Kidō</b>,<br>
+  Stores, Home layouts and more for <b>Kidō</b> (releasing soon),<br>
   the controller-first home app that turns a Windows handheld into a console.
 </p>
 
@@ -89,5 +89,5 @@ Kidō refuses a listed package whose SHA-256 differs from the one in `index.toml
 
 ## License
 
-[GPL-3.0-only](LICENSE), the same license as Kidō.
+[GPL-3.0-only](LICENSE).
 A plugin you build from one of these stays open under it too.
