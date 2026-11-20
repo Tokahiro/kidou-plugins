@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "errors": [
+    "dimensions: must be one of 460x215, 920x430, 600x900, 342x482, 660x930, 512x512, 1024x1024"
+  ]
+}

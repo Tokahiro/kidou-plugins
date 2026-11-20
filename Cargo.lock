@@ -1884,6 +1884,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kidou-plugin-steamgriddb"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "kurbo"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,100 @@
+{
+  "success": true,
+  "page": 0,
+  "total": 4,
+  "limit": 50,
+  "data": [
+    {
+      "id": 1201,
+      "score": 3,
+      "style": "blurred",
+      "width": 660,
+      "height": 930,
+      "nsfw": false,
+      "humor": false,
+      "notes": null,
+      "mime": "image/png",
+      "language": "en",
+      "url": "https://cdn2.steamgriddb.com/grid/000000000000000000000000000004b1.png",
+      "thumb": "https://cdn2.steamgriddb.com/thumb/000000000000000000000000000004b1.png",
+      "lock": false,
+      "epilepsy": false,
+      "upvotes": 2,
+      "downvotes": 0,
+      "author": {
+        "name": "artist",
+        "steam64": "76561197960265729",
+        "avatar": "https://cdn2.steamgriddb.com/avatar/0.jpg"
+      }
+    },
+    {
+      "id": 1202,
+      "score": 3,
+      "style": "white_logo",
+      "width": 600,
+      "height": 900,
+      "nsfw": false,
+      "humor": false,
+      "notes": null,
+      "mime": "image/png",
+      "language": "en",
+      "url": "https://cdn2.steamgriddb.com/grid/000000000000000000000000000004b2.png",
+      "thumb": "https://cdn2.steamgriddb.com/thumb/000000000000000000000000000004b2.png",
+      "lock": false,
+      "epilepsy": false,
+      "upvotes": 2,
+      "downvotes": 0,
+      "author": {
+        "name": "artist",
+        "steam64": "76561197960265729",
+        "avatar": "https://cdn2.steamgriddb.com/avatar/0.jpg"
+      }
+    },
+    {
+      "id": 1203,
+      "score": 7,
+      "style": "alternate",
+      "width": 600,
+      "height": 900,
+      "nsfw": false,
+      "humor": false,
+      "notes": null,
+      "mime": "image/png",
+      "language": "en",
+      "url": "https://cdn2.steamgriddb.com/grid/000000000000000000000000000004b3.png",
+      "thumb": "https://cdn2.steamgriddb.com/thumb/000000000000000000000000000004b3.png",
+      "lock": false,
+      "epilepsy": false,
+      "upvotes": 0,
+      "downvotes": 4,
+      "author": {
+        "name": "artist",
+        "steam64": "76561197960265729",
+        "avatar": "https://cdn2.steamgriddb.com/avatar/0.jpg"
+      }
+    },
+    {
+      "id": 1204,
+      "score": 1,
+      "style": "alternate",
+      "width": 342,
+      "height": 482,
+      "nsfw": false,
+      "humor": false,
+      "notes": null,
+      "mime": "image/png",
+      "language": "en",
+      "url": "https://cdn2.steamgriddb.com/grid/000000000000000000000000000004b4.png",
+      "thumb": "https://cdn2.steamgriddb.com/thumb/000000000000000000000000000004b4.png",
+      "lock": false,
+      "epilepsy": false,
+      "upvotes": 30,
+      "downvotes": 0,
+      "author": {
+        "name": "artist",
+        "steam64": "76561197960265729",
+        "avatar": "https://cdn2.steamgriddb.com/avatar/0.jpg"
+      }
+    }
+  ]
+}
