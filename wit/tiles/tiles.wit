@@ -8,7 +8,8 @@
 //     }
 //
 // Its settings rows and tiles are data in its manifest, which Kidō draws. A press runs in an
-// instance of its own, apart from the plugin's other calls.
+// instance of its own, apart from the plugin's other calls, and gets no network: `http` answers
+// it `denied`. Kidō refuses a plugin whose manifest names tiles without this export.
 package kidou:tiles@1.0.0;
 
 interface handler {
