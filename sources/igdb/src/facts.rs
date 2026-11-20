@@ -41,11 +41,11 @@ pub fn row(beat: TimeToBeat, language: Language) -> Option<Row> {
 mod tests {
     use super::{Language, Row, TimeToBeat, row};
 
-    fn told(label: &str, value: &str) -> Option<Row> {
-        Some(Row {
+    fn told(label: &str, value: &str) -> Row {
+        Row {
             label: label.to_owned(),
             value: value.to_owned(),
-        })
+        }
     }
 
     #[test]
@@ -55,12 +55,18 @@ mod tests {
             extras: Some(629),
             complete: Some(1230),
         };
-        assert_eq!(row(all, Language::English), told("Main story", "≈ 8 h"));
-        assert_eq!(row(all, Language::German), told("Hauptstory", "≈ 8 Std."));
+        assert_eq!(
+            row(all, Language::English),
+            Some(told("Main story", "≈ 8 h"))
+        );
+        assert_eq!(
+            row(all, Language::German),
+            Some(told("Hauptstory", "≈ 8 Std."))
+        );
         let extras = TimeToBeat { main: None, ..all };
         assert_eq!(
             row(extras, Language::English),
-            told("With extras", "≈ 10 h")
+            Some(told("With extras", "≈ 10 h"))
         );
         let complete = TimeToBeat {
             complete: Some(1230),
@@ -68,7 +74,7 @@ mod tests {
         };
         assert_eq!(
             row(complete, Language::German),
-            told("Komplett", "≈ 21 Std.")
+            Some(told("Komplett", "≈ 21 Std."))
         );
     }
 
@@ -78,7 +84,10 @@ mod tests {
             extras: Some(5),
             ..TimeToBeat::default()
         };
-        assert_eq!(row(short, Language::English), told("With extras", "≈ 1 h"));
+        assert_eq!(
+            row(short, Language::English),
+            Some(told("With extras", "≈ 1 h"))
+        );
         assert_eq!(row(TimeToBeat::default(), Language::German), None);
     }
 }
