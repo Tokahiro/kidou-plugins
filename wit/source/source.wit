@@ -23,7 +23,8 @@ interface types {
     record wanted { art: list<art-kind>, facts: bool }
 
     /// A picture at an `https` address of one of the plugin's art hosts (`[grants] hosts`).
-    record art { kind: art-kind, url: string }
+    /// `titled`: the picture shows the game's title, so Kidō draws none over it.
+    record art { kind: art-kind, url: string, titled: bool }
 
     /// A row of facts on the game's page: its label and its value, in the language asked for.
     record fact { label: string, value: string }
@@ -32,8 +33,9 @@ interface types {
 
     /// Why there is no answer. `refused`: the service refused what the player typed in for the
     /// setting of this key, which Kidō says next to it until the player types in another.
-    /// `failed`: anything else, for Kidō's log; Kidō asks again later.
-    variant problem { refused(string), failed(string) }
+    /// `later`: the service asks to be left alone for this many seconds; Kidō asks none of the
+    /// plugin's games before then. `failed`: anything else, for Kidō's log; Kidō asks again later.
+    variant problem { refused(string), later(u32), failed(string) }
 }
 
 interface lookup {
