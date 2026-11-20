@@ -2,7 +2,7 @@
 // since 1970-01-01 00:00 UTC, and a day a local calendar day counted from 1970-01-01. On
 // Windows a drive path is `/C/Games/X` in both directions, as WASI reads it, and so is a
 // registry text value that starts with one.
-package kidou:host@1.0.0;
+package kidou:host@1.1.0;
 
 /// The registry keys and folders the plugin's grants allow, and Windows' answers.
 interface host {
@@ -36,7 +36,7 @@ interface sqlite {
     version: func() -> string;
 }
 
-/// HTTPS GETs, only to the hosts the plugin's grants name for its network (`[grants] network`).
+/// HTTPS GETs and POSTs, only to the hosts the plugin's grants name for its network (`[grants] network`).
 /// A redirect is answered as it came, never followed: the plugin asks again where it points, and
 /// its grants decide again.
 interface http {
@@ -47,4 +47,8 @@ interface http {
     variant http-error { denied, too-large, unreachable(string), failed(string) }
 
     get: func(url: string, headers: list<tuple<string, string>>) -> result<response, http-error>;
+
+    /// Sends `body` as it is; a `content-type` header names its type. Since 1.1.0.
+    post: func(url: string, headers: list<tuple<string, string>>, body: list<u8>)
+        -> result<response, http-error>;
 }

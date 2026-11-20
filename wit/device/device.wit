@@ -23,7 +23,7 @@ interface handler {
 }
 
 world device {
-    import kidou:host/host@1.0.0;
-    import kidou:host/sqlite@1.0.0;
+    import kidou:host/host@1.1.0;
+    import kidou:host/sqlite@1.1.0;
     export handler;
 }

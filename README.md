@@ -107,7 +107,7 @@ Kidō refuses a listed package whose SHA-256 differs from the one in `index.toml
 | Category | Adds | Built with | May ask for | Runs |
 | --- | --- | --- | --- | --- |
 | `store` | A store's or launcher's games, their launches and links; settings rows and quick-menu tiles | WebAssembly, `kidou:store` 2.x | Registry keys, folders, link schemes, art hosts | At start; dropped where its store isn't found |
-| `source` | Art and facts for any game; settings rows and quick-menu tiles | WebAssembly, `kidou:source` 1.x | Art hosts, `https` hosts it asks itself | At its first call |
+| `source` | Art and facts for any game; settings rows and quick-menu tiles | WebAssembly, `kidou:source` 2.x | Art hosts, `https` hosts it asks itself | At its first call |
 | `device` | Support for a device and its maker's app: settings rows and quick-menu tiles | WebAssembly, `kidou:device` 1.x | Registry keys, folders, link schemes | Only on a device it serves |
 | `events` | Acts when a game starts or ends; settings rows and quick-menu tiles | WebAssembly, `kidou:events` 1.x | Registry keys, folders, link schemes | At the events it names |
 | `layout` | A Home layout | Slint, the layout contract 3.x | Nothing | Only while chosen |
@@ -246,6 +246,7 @@ The same folder always gives the same file.
 index.toml       Kidō's list: each plugin's id, name, category, version, api, package and SHA-256
 layouts/<id>/    the source of each Home layout
 devices/<id>/    the source of each device plugin
+sources/<id>/    the source of each source plugin
 wit/             the interfaces of the WebAssembly categories
 packages/        every listed package; a file here never changes
 xtask/           the check and the packer that CI runs
@@ -253,7 +254,7 @@ xtask/           the check and the packer that CI runs
 
 To change a plugin:
 
-1. Change its source under `layouts/<id>/` or `devices/<id>/`.
+1. Change its source under `layouts/<id>/`, `devices/<id>/` or `sources/<id>/`.
 2. Raise `version` in its `plugin.toml`. Leave `index.toml` and `packages/` alone.
 3. Open a pull request.
 
