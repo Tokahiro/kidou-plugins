@@ -11,8 +11,8 @@ use serde::Deserialize;
 pub const API: &str = "https://www.pcgamingwiki.com/w/api.php";
 
 /// The User-Agent the API asks of an automated client: its own name and where to reach its
-/// makers. A generic one can be refused.
-pub const AGENT: &str = "Kidou-PCGamingWiki/1.0 (+https://github.com/Tokahiro/kidou-plugins)";
+/// makers. A generic one can be refused. Its version is the manifest's.
+pub const AGENT: &str = "Kidou-PCGamingWiki/1.0.0 (+https://github.com/Tokahiro/kidou-plugins)";
 
 /// The longest page title sent, in bytes. MediaWiki's own limit is 255.
 const TITLE_MAX: usize = 255;
@@ -25,6 +25,29 @@ pub fn id_field(store: &str) -> Option<&'static str> {
         "gog" => Some("gogid"),
         _ => None,
     }
+}
+
+/// The name the wiki's availability rows give the store of id `store`, for a store without
+/// an id lookup whose games are found by title; none for another store.
+pub fn shop(store: &str) -> Option<&'static str> {
+    match store {
+        "epic" => Some("Epic Games Store"),
+        "xbox" => Some("Microsoft Store"),
+        _ => None,
+    }
+}
+
+/// Whether the titles `page` and `asked` name the same game: equal but for case, spaces and
+/// punctuation, so `Hades II` is `HADES II` and `Hades: II`, but not `Hades`.
+pub fn same_title(page: &str, asked: &str) -> bool {
+    let letters = |title: &str| -> String {
+        (title.chars())
+            .filter(|c| c.is_alphanumeric())
+            .flat_map(char::to_lowercase)
+            .collect()
+    };
+    let page = letters(page);
+    !page.is_empty() && page == letters(asked)
 }
 
 /// The address that looks up the page of the store id `id` under `field`; `None` for an id that
@@ -53,9 +76,10 @@ pub fn wikitext(title: &str) -> Option<String> {
     })
 }
 
-/// The address of the page `title` on the wiki, without the scheme, as the credit names it.
-pub fn page(title: &str) -> String {
-    format!("pcgamingwiki.com/wiki/{}", title.trim().replace(' ', "_"))
+/// The short address of the page of id `id` on the wiki, without the scheme, as the credit
+/// names it: Kidō shows at most 80 characters of a fact, and a title can be long.
+pub fn page(id: u64) -> String {
+    format!("pcgamingwiki.com/?curid={id}")
 }
 
 /// `text` percent-encoded for a query, all but RFC 3986's unreserved characters.
@@ -75,6 +99,7 @@ fn encode(text: &str) -> String {
 struct IdLookupJson {
     #[serde(default)]
     idlookup: Vec<FoundJson>,
+    error: Option<ErrorJson>,
 }
 
 #[derive(Deserialize)]
@@ -97,6 +122,8 @@ struct ParseJson {
 #[derive(Deserialize)]
 struct ParsedJson {
     title: String,
+    #[serde(default)]
+    pageid: u64,
     wikitext: String,
 }
 
@@ -110,6 +137,9 @@ struct ErrorJson {
 pub fn found_page(body: &[u8]) -> Result<Option<String>, String> {
     let answer: IdLookupJson = serde_json::from_slice(body)
         .map_err(|_| "PCGamingWiki's id lookup does not read".to_owned())?;
+    if let Some(error) = answer.error {
+        return Err(format!("PCGamingWiki answered {}", short(&error.code)));
+    }
     Ok((answer.idlookup.into_iter())
         .map(|found| found.title.page)
         .find(|page| !page.trim().is_empty()))
@@ -119,6 +149,7 @@ pub fn found_page(body: &[u8]) -> Result<Option<String>, String> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Page {
     pub title: String,
+    pub id: u64,
     pub wikitext: String,
 }
 
@@ -129,6 +160,7 @@ pub fn parsed(body: &[u8]) -> Result<Option<Page>, String> {
     match (answer.parse, answer.error) {
         (Some(parsed), _) => Ok(Some(Page {
             title: parsed.title,
+            id: parsed.pageid,
             wikitext: parsed.wikitext,
         })),
         (None, Some(error)) if error.code == "missingtitle" || error.code == "invalidtitle" => {

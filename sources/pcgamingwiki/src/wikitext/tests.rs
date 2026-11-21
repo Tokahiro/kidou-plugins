@@ -1,4 +1,4 @@
-use super::{first_arguments, template};
+use super::{first_arguments, sold_at, template};
 
 fn pairs(fields: &[(&str, &str)]) -> Vec<(String, String)> {
     (fields.iter())
@@ -53,4 +53,14 @@ fn the_first_argument_of_each_row_is_read() {
         first_arguments("", "Infobox game/row/engine"),
         Vec::<String>::new()
     );
+}
+
+#[test]
+fn a_store_is_found_in_the_availability_rows() {
+    let page = "{{Availability|\n\
+                {{Availability/row| Epic Games Store | hades-ii | DRM-free | | | Windows }}\n\
+                {{Availability/row| Steam | 1145350 | Steam | | | Windows }}\n}}";
+    assert!(sold_at(page, "Epic Games Store"));
+    assert!(sold_at(page, "steam"));
+    assert!(!sold_at(page, "Microsoft Store"));
 }

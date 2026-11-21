@@ -72,10 +72,10 @@ const CLOUDS: [(&str, &str); 6] = [
 /// The most engines named in the row.
 const ENGINES_MAX: usize = 2;
 
-/// The facts of the page `title` with the wikitext `page`, in Kidō's order: controller, frame
+/// The facts of the page of id `page_id` with the wikitext `page`, in Kidō's order: controller, frame
 /// rate, ultrawide, HDR, cloud saves, engine, then the credit. None, and no credit, where the
 /// page tells none of them.
-pub fn rows(title: &str, page: &str, language: Language) -> Vec<Row> {
+pub fn rows(page_id: u64, page: &str, language: Language) -> Vec<Row> {
     let input = template(page, "Input");
     let video = template(page, "Video");
     let clouds = template(page, "Save game cloud syncing");
@@ -109,19 +109,21 @@ pub fn rows(title: &str, page: &str, language: Language) -> Vec<Row> {
         };
         rows.push(Row {
             label: label.to_owned(),
-            value: format!("CC BY-NC-SA 3.0, {shortened}, {}", api::page(title)),
+            value: format!("CC BY-NC-SA 3.0, {shortened}, {}", api::page(page_id)),
         });
     }
     rows
 }
 
-/// Whether the game takes a controller: all of it, part of it, or with a fix.
+/// Whether the game takes a controller: all of it, part of it, with a fix, or, where the wiki
+/// does not say how much, just yes.
 fn controller(input: &[(String, String)], language: Language) -> Option<String> {
     let support = State::of(input, "controller support")?;
     let full = State::of(input, "full controller");
     let word = match (support, full, language) {
         (State::Yes | State::AlwaysOn, Some(State::Yes), Language::English) => "Full",
         (State::Yes | State::AlwaysOn, Some(State::Yes), Language::German) => "Vollständig",
+        (State::Yes | State::AlwaysOn, None, _) => State::Yes.word(language),
         (State::Yes | State::AlwaysOn | State::Limited, _, Language::English) => "Partial",
         (State::Yes | State::AlwaysOn | State::Limited, _, Language::German) => "Teilweise",
         (State::Hackable | State::No, _, _) => support.word(language),

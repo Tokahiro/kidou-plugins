@@ -2,7 +2,7 @@
 //! read from the wiki's page of the game. It needs no key and gives no art.
 //!
 //! It asks only when the game's page shows, with two requests: the page of the game's Steam or
-//! GOG id, then that page's wikitext. A game of another store is asked for by its title. Kidō
+//! GOG id, then that page's wikitext. An Epic or Xbox game is asked for by its title. Kidō
 //! keeps what it gives, so the wiki is asked about a game once and the facts show offline after.
 //! The wiki is small and community run and asks clients to ask little: at most 60 requests a
 //! minute, with an agent that names the client.
@@ -81,12 +81,16 @@ pub enum Problem {
 
 /// The rows of facts the wiki tells for `ask`. Nothing, and no request, while the facts are not
 /// wanted; nothing where the wiki has no page of the game.
+///
+/// A Steam or GOG game is found by its id. A game of another store is found by its title only
+/// where the page has that title, after redirects, and lists the store: a bare title often
+/// names an older game of the same name, and wrong facts are worse than none.
 pub fn about(http: &mut dyn Get, ask: &Ask<'_>) -> Result<Vec<Row>, Problem> {
     if !ask.facts {
         return Ok(Vec::new());
     }
-    let title = match api::id_field(ask.store) {
-        Some(field) => {
+    let title = match (api::id_field(ask.store), api::shop(ask.store)) {
+        (Some(field), _) => {
             let Some(url) = api::id_lookup(field, ask.store_id) else {
                 return Ok(Vec::new());
             };
@@ -96,7 +100,8 @@ pub fn about(http: &mut dyn Get, ask: &Ask<'_>) -> Result<Vec<Row>, Problem> {
             };
             title
         }
-        None => ask.title.to_owned(),
+        (None, Some(_)) => ask.title.to_owned(),
+        (None, None) => return Ok(Vec::new()),
     };
     let Some(url) = api::wikitext(&title) else {
         return Ok(Vec::new());
@@ -105,7 +110,12 @@ pub fn about(http: &mut dyn Get, ask: &Ask<'_>) -> Result<Vec<Row>, Problem> {
     let Some(page) = api::parsed(&body).map_err(Problem::Failed)? else {
         return Ok(Vec::new());
     };
-    Ok(facts::rows(&page.title, &page.wikitext, ask.language))
+    if let Some(shop) = api::shop(ask.store).filter(|_| api::id_field(ask.store).is_none())
+        && !(api::same_title(&page.title, ask.title) && wikitext::sold_at(&page.wikitext, shop))
+    {
+        return Ok(Vec::new());
+    }
+    Ok(facts::rows(page.id, &page.wikitext, ask.language))
 }
 
 /// The body of the answer to a GET of `url`, or why there is none.

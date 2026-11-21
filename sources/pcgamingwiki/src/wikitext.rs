@@ -37,6 +37,12 @@ pub fn first_arguments(page: &str, name: &str) -> Vec<String> {
     found
 }
 
+/// Whether the page's availability rows, `{{Availability/row| Steam | …}}`, name the store
+/// `shop`.
+pub fn sold_at(page: &str, shop: &str) -> bool {
+    (first_arguments(page, "Availability/row").iter()).any(|name| name.eq_ignore_ascii_case(shop))
+}
+
 /// What stands between `{{name` and its closing `}}`, where `name` ends at a line break, a `|`
 /// or the `}}`: `{{Video game` is no `{{Video`.
 fn body<'a>(page: &'a str, name: &str) -> Option<&'a str> {

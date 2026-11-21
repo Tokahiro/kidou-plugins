@@ -13,7 +13,7 @@ fn told(rows: &[Row]) -> Vec<(&str, &str)> {
 #[test]
 fn hades_ii_s_facts_in_english_and_german() {
     assert_eq!(
-        told(&rows("Hades II", HADES, Language::English)),
+        told(&rows(183_626, HADES, Language::English)),
         [
             ("Controller", "Full"),
             ("Frame rate", "Over 60 fps"),
@@ -23,12 +23,12 @@ fn hades_ii_s_facts_in_english_and_german() {
             ("Engine", "The Forge"),
             (
                 "License",
-                "CC BY-NC-SA 3.0, shortened, pcgamingwiki.com/wiki/Hades_II"
+                "CC BY-NC-SA 3.0, shortened, pcgamingwiki.com/?curid=183626"
             ),
         ]
     );
     assert_eq!(
-        told(&rows("Hades II", HADES, Language::German)),
+        told(&rows(183_626, HADES, Language::German)),
         [
             ("Controller", "Vollständig"),
             ("Bildrate", "Über 60 fps"),
@@ -38,7 +38,7 @@ fn hades_ii_s_facts_in_english_and_german() {
             ("Engine", "The Forge"),
             (
                 "Lizenz",
-                "CC BY-NC-SA 3.0, gekürzt, pcgamingwiki.com/wiki/Hades_II"
+                "CC BY-NC-SA 3.0, gekürzt, pcgamingwiki.com/?curid=183626"
             ),
         ]
     );
@@ -47,17 +47,17 @@ fn hades_ii_s_facts_in_english_and_german() {
 #[test]
 fn a_page_without_facts_gets_no_credit() {
     assert_eq!(
-        rows("Hades", "{{Video\n|hdr = unknown\n}}", Language::English),
+        rows(1, "{{Video\n|hdr = unknown\n}}", Language::English),
         Vec::new()
     );
     assert_eq!(
-        rows("Hades", "#REDIRECT [[Hades II]]", Language::German),
+        rows(1, "#REDIRECT [[Hades II]]", Language::German),
         Vec::new()
     );
 }
 
 fn one(page: &str, language: Language) -> Vec<(String, String)> {
-    let rows = rows("X", page, language);
+    let rows = rows(1, page, language);
     (rows.into_iter())
         .filter(|row| row.label != "License" && row.label != "Lizenz")
         .map(|row| (row.label, row.value))
@@ -79,7 +79,7 @@ fn a_controller_is_taken_fully_partly_with_a_fix_or_not() {
         one(&input("true", "false"), en),
         row("Controller", "Partial")
     );
-    assert_eq!(one(&input("true", ""), en), row("Controller", "Partial"));
+    assert_eq!(one(&input("true", ""), en), row("Controller", "Yes"));
     assert_eq!(
         one(&input("limited", "true"), en),
         row("Controller", "Partial")

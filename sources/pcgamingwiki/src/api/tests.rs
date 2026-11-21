@@ -1,4 +1,6 @@
-use super::{Page, found_page, id_field, id_lookup, page, parsed, wikitext};
+use super::{
+    AGENT, Page, found_page, id_field, id_lookup, page, parsed, same_title, shop, wikitext,
+};
 
 #[test]
 fn steam_and_gog_alone_have_an_id_field() {
@@ -50,8 +52,8 @@ fn a_title_is_percent_encoded_and_a_title_of_no_page_never_sent() {
 }
 
 #[test]
-fn the_credit_names_the_page_as_its_address() {
-    assert_eq!(page("Hades II"), "pcgamingwiki.com/wiki/Hades_II");
+fn the_credit_names_the_page_by_its_id() {
+    assert_eq!(page(183_626), "pcgamingwiki.com/?curid=183626");
 }
 
 #[test]
@@ -65,6 +67,10 @@ fn the_id_lookup_names_the_page_or_none() {
         Ok(None)
     );
     assert!(found_page(b"<html>Just a moment...</html>").is_err());
+    assert_eq!(
+        found_page(br#"{"error":{"code":"ratelimited","info":"Too fast."}}"#),
+        Err("PCGamingWiki answered ratelimited".to_owned())
+    );
 }
 
 #[test]
@@ -75,6 +81,7 @@ fn a_parse_gives_the_page_none_or_the_wiki_s_error() {
         parsed(hades),
         Ok(Some(Page {
             title: "Hades II".to_owned(),
+            id: 183_626,
             wikitext: "{{Video\n|hdr = false\n}}".to_owned(),
         }))
     );
@@ -88,4 +95,36 @@ fn a_parse_gives_the_page_none_or_the_wiki_s_error() {
     );
     assert!(parsed(br#"{"batchcomplete":true}"#).is_err());
     assert!(parsed(b"").is_err());
+}
+
+#[test]
+fn the_agent_names_the_manifest_s_version() {
+    let manifest = include_str!("../../plugin.toml");
+    let version = (manifest.lines())
+        .find_map(|line| line.strip_prefix("version = \""))
+        .and_then(|rest| rest.strip_suffix('"'))
+        .unwrap();
+    assert!(
+        AGENT.starts_with(&format!("Kidou-PCGamingWiki/{version} ")),
+        "{AGENT}"
+    );
+}
+
+#[test]
+fn epic_and_xbox_games_are_found_by_title_and_store() {
+    assert_eq!(shop("epic"), Some("Epic Games Store"));
+    assert_eq!(shop("xbox"), Some("Microsoft Store"));
+    assert_eq!(shop("steam"), None);
+    assert_eq!(shop("itch"), None);
+}
+
+#[test]
+fn titles_match_but_for_case_spaces_and_punctuation() {
+    assert!(same_title("Hades II", "HADES  II"));
+    assert!(same_title("Hades II", "Hades: II"));
+    assert!(same_title("Ōkami HD", "ōkami hd"));
+    assert!(!same_title("Hades", "Hades II"));
+    assert!(!same_title("Tomb Raider (1996)", "Tomb Raider"));
+    assert!(!same_title("", ""));
+    assert!(!same_title("!!", "??"));
 }

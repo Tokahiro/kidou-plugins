@@ -131,6 +131,28 @@ fn a_game_of_another_store_is_found_by_its_title() {
 }
 
 #[test]
+fn a_title_that_leads_to_another_game_or_store_has_no_facts() {
+    // Asked for "Hades II", the wiki leads on to another game's page.
+    let other =
+        serde_json::json!({ "parse": { "title": "Hades", "pageid": 2, "wikitext": HADES } });
+    let mut http = FakeHttp::default();
+    http.answer(PAGE_HADES, ok(&other.to_string()));
+    assert_eq!(
+        about(&mut http, &ask("xbox", "x", "Hades II")),
+        Ok(Vec::new())
+    );
+    let mut http = FakeHttp::default();
+    let not_on_epic = serde_json::json!({ "parse": { "title": "Hades II", "pageid": 1,
+        "wikitext": "{{Availability|\n{{Availability/row| Steam | 1145350 | Steam | | | Windows }}\n}}\n{{Video\n|hdr = true\n}}" } });
+    http.answer(PAGE_HADES, ok(&not_on_epic.to_string()));
+    assert_eq!(
+        about(&mut http, &ask("epic", "x", "Hades II")),
+        Ok(Vec::new())
+    );
+    assert_eq!(http.urls(), [PAGE_HADES]);
+}
+
+#[test]
 fn nothing_is_asked_unless_the_page_shows_or_for_an_id_that_is_no_number() {
     let mut http = FakeHttp::default();
     let art_only = Ask {
@@ -143,6 +165,10 @@ fn nothing_is_asked_unless_the_page_shows_or_for_an_id_that_is_no_number() {
         Ok(Vec::new())
     );
     assert_eq!(about(&mut http, &ask("epic", "a", "A|B")), Ok(Vec::new()));
+    assert_eq!(
+        about(&mut http, &ask("itch", "1", "Hades II")),
+        Ok(Vec::new())
+    );
     assert_eq!(http.asked, Vec::new());
 }
 
