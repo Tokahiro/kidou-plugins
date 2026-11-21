@@ -54,6 +54,7 @@ Ready parts come with the contract, among them `Cover`, `RowCover`, `HeroTitle`,
 ## Contract Versions
 
 Until Kidō's first release, the contract may change in any way, also within 3.x.
+Such a change takes the next minor version, and a layout it breaks needs a fix to run again.
 From the first release on, a change that breaks a layout built for the contract needs a new major version, such as 4.0.0.
 A new part or property a layout may use is a new minor version.
 
