@@ -1,7 +1,7 @@
 id = "pcgamingwiki"
 name = "PCGamingWiki"
 badge = "PCGW"
-version = "1.0.0"
+version = "1.0.1"
 author = "Kidō"
 homepage = "https://www.pcgamingwiki.com"
 category = "source"

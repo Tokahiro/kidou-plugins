@@ -12,7 +12,7 @@ pub const API: &str = "https://www.pcgamingwiki.com/w/api.php";
 
 /// The User-Agent the API asks of an automated client: its own name and where to reach its
 /// makers. A generic one can be refused. Its version is the manifest's.
-pub const AGENT: &str = "Kidou-PCGamingWiki/1.0.0 (+https://github.com/Tokahiro/kidou-plugins)";
+pub const AGENT: &str = "Kidou-PCGamingWiki/1.0.1 (+https://github.com/Tokahiro/kidou-plugins)";
 
 /// The longest page title sent, in bytes. MediaWiki's own limit is 255.
 const TITLE_MAX: usize = 255;
