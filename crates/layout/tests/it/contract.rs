@@ -4,7 +4,7 @@ use std::path::Path;
 use kidou_layout::VERSION;
 
 /// The names the contract's files export, by the version that brought them. A new name takes a
-/// new row with the next minor version, never a place in a row already released, and
+/// new row with the next minor version, never a place in an earlier row, and
 /// [`VERSION`] and Kidō's `LAYOUT_CONTRACT` follow it.
 const BROUGHT: &[(&str, &[&str])] = &[
     (

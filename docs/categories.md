@@ -47,6 +47,7 @@ api = "3.0.0"            # the version of the category's interface it's built fo
 ```
 
 A plugin built for `api = "3.0.0"` runs on every Kidō whose interface for that category is 3.0.0 or a later 3.x.
+Until Kidō's first release, the layout contract may still break within 3.x ([Contract Versions](layouts.md#contract-versions)).
 Kidō refuses a plugin built for another first number or for a later version than its own, a manifest with a key its category doesn't have, and a grant its category may not ask for.
 The refusal names the rule.
 

@@ -51,6 +51,13 @@ It gives these back:
 Ready parts come with the contract, among them `Cover`, `RowCover`, `HeroTitle`, `Kicker`, `Facts`, `EmptyCard`, `Shoulder`, `Glass` and `Ring`.
 `Kicker` and `Shoulder` came with contract 3.1.0: a layout that uses them says `api = "3.1.0"`.
 
+## Contract Versions
+
+Until Kidō's first release, the contract may change in any way, also within 3.x.
+Such a change takes the next minor version, and a layout it breaks needs a fix to run again.
+From the first release on, a change that breaks a layout built for the contract needs a new major version, such as 4.0.0.
+A new part or property a layout may use is a new minor version.
+
 ## Reduced Motion
 
 A player can turn motion down in Kidō's settings, and a layout must keep to that.
