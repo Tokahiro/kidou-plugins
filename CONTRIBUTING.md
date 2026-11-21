@@ -6,6 +6,7 @@ The repository holds the source of each plugin, the packages and the list of off
 index.toml       Kidō's list: each plugin's id, name, category, version, api, package and SHA-256
 layouts/<id>/    the source of each Home layout
 devices/<id>/    the source of each device plugin
+sources/<id>/    the source of each source plugin
 crates/layout/   the layout check, which Kidō builds too
 wit/             the interfaces of the WebAssembly categories
 packages/        every listed package; a file here never changes
@@ -15,7 +16,7 @@ docs/            the guides for plugin writers
 
 To change a plugin:
 
-1. Change its source under `layouts/<id>/` or `devices/<id>/`.
+1. Change its source under `layouts/<id>/`, `devices/<id>/` or `sources/<id>/`.
 2. Raise `version` in its `plugin.toml`. Leave `index.toml` and `packages/` alone.
 3. Open a pull request.
 

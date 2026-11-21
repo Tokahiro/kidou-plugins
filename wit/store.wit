@@ -3,7 +3,7 @@
 package kidou:store@2.0.0;
 
 interface types {
-    use kidou:host/host@1.0.0.{hive};
+    use kidou:host/host@1.1.0.{hive};
 
     enum note-level { info, warning }
     record note { level: note-level, text: string }
@@ -124,7 +124,7 @@ interface runtime {
 }
 
 world plugin {
-    import kidou:host/host@1.0.0;
-    import kidou:host/sqlite@1.0.0;
+    import kidou:host/host@1.1.0;
+    import kidou:host/sqlite@1.1.0;
     export runtime;
 }

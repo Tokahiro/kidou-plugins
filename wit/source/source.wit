@@ -1,10 +1,16 @@
 // A source plugin: art and facts for any game, in WIT, on the `http` import of `kidou:host`
-// (../deps/host). Kidō calls it only while the player has it on, for the game whose art or page
-// it needs, and keeps what it gives.
-package kidou:source@1.0.0;
+// (../deps/host). Kidō calls it only while the player has it on, for the games whose art it
+// needs and for the game whose page shows, and keeps what it gives.
+package kidou:source@2.0.0;
 
 interface types {
     enum language { english, german }
+
+    /// A setting's value as the player set it, or its default: by the setting's key in the
+    /// manifest. A `text` is a key: 20 to 64 ASCII letters and digits, as Kidō takes it, or
+    /// empty while the player has typed in none.
+    variant value { switch(bool), choice(string), text(string) }
+    record setting { key: string, value: value }
 
     /// The game asked about: its store's id, its key in that store, and its title.
     record game { store: string, key: string, title: string }
@@ -13,23 +19,36 @@ interface types {
     /// the background behind Home and the game page, or the logo on transparency.
     enum art-kind { square, cover, hero, logo }
 
+    /// What Kidō needs: the kinds of art it has no picture of, and whether the game's page
+    /// shows, which needs the facts. A plugin gives no more than it is asked for.
+    record wanted { art: list<art-kind>, facts: bool }
+
     /// A picture at an `https` address of one of the plugin's art hosts (`[grants] hosts`).
-    record art { kind: art-kind, url: string }
+    /// `titled`: the picture shows the game's title, so Kidō draws none over it.
+    record art { kind: art-kind, url: string, titled: bool }
 
     /// A row of facts on the game's page: its label and its value, in the language asked for.
     record fact { label: string, value: string }
 
     record found { art: list<art>, facts: list<fact> }
+
+    /// Why there is no answer. `refused`: the service refused what the player typed in for the
+    /// setting of this key, which Kidō says next to it until the player types in another.
+    /// `later`: the service asks to be left alone for this many seconds; Kidō asks none of the
+    /// plugin's games before then. `failed`: anything else, for Kidō's log; Kidō asks again later.
+    variant problem { refused(string), later(u32), failed(string) }
 }
 
 interface lookup {
-    use types.{language, game, found};
+    use types.{language, setting, game, wanted, found, problem};
 
-    /// What the source knows of `game`, the best art first.
-    about: func(game: game, language: language) -> found;
+    /// What the source knows of `game`, the best art first. `settings` are the plugin's
+    /// settings, each with its value or its default.
+    about: func(game: game, wanted: wanted, language: language, settings: list<setting>)
+        -> result<found, problem>;
 }
 
 world source {
-    import kidou:host/http@1.0.0;
+    import kidou:host/http@1.1.0;
     export lookup;
 }

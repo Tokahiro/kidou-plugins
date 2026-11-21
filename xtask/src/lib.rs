@@ -25,9 +25,10 @@ pub const PACKAGES: &str = "https://raw.githubusercontent.com/Tokahiro/kidou-plu
 
 /// Each category whose plugins have their source here: its name, the folder that holds them,
 /// one folder per plugin named by its id, and what a plugin of it brings beside its manifest.
-pub const SOURCES: [(&str, &str, Brings); 2] = [
+pub const SOURCES: [(&str, &str, Brings); 3] = [
     ("layout", "layouts", Brings::Folder(kidou_layout::FOLDER)),
     ("device", "devices", Brings::Code),
+    ("source", "sources", Brings::Code),
 ];
 
 /// What a plugin's package holds beside its manifest.
@@ -168,6 +169,9 @@ pub fn sources(root: &Path) -> Result<Vec<Source>, String> {
     let mut found = Vec::new();
     for (category, folder, brings) in SOURCES {
         let all = root.join(folder);
+        if !all.is_dir() {
+            continue;
+        }
         let unreadable = |why: std::io::Error| format!("{}: {why}", all.display());
         let mut folders = Vec::new();
         for entry in fs::read_dir(&all).map_err(unreadable)? {

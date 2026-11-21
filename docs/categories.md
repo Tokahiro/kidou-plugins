@@ -10,7 +10,7 @@ A plugin with code runs in a sandbox and reaches only what its manifest asks for
 | Category | Adds | Built with | May ask for | Runs |
 | --- | --- | --- | --- | --- |
 | `store` | A store's or launcher's games, their launches and links; settings rows and quick-menu tiles | WebAssembly, `kidou:store` 2.x | Registry keys, folders, link schemes, art hosts | At start; dropped where its store isn't found |
-| `source` | Art and facts for any game; settings rows and quick-menu tiles | WebAssembly, `kidou:source` 1.x | Art hosts, `https` hosts it asks itself | At its first call |
+| `source` | Art and facts for any game; settings rows and quick-menu tiles | WebAssembly, `kidou:source` 2.x | Art hosts, `https` hosts it asks itself | At its first call |
 | `device` | Support for a device and its maker's app: settings rows and quick-menu tiles | WebAssembly, `kidou:device` 1.x | Registry keys, folders, link schemes | Only on a device it serves |
 | `events` | Acts when a game starts or ends; settings rows and quick-menu tiles | WebAssembly, `kidou:events` 1.x | Registry keys, folders, link schemes | At the events it names |
 | `layout` | A Home layout | Slint, the layout contract 3.x | Nothing | Only while chosen |
