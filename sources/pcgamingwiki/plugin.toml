@@ -1,0 +1,13 @@
+id = "pcgamingwiki"
+name = "PCGamingWiki"
+badge = "PCGW"
+version = "1.0.0"
+author = "Kidō"
+homepage = "https://www.pcgamingwiki.com"
+category = "source"
+api = "2.0.0"
+
+[grants]
+network = [
+    { host = "www.pcgamingwiki.com", why = { de = "Liest die Seite deines Spiels, wenn du sie öffnest", en = "Reads your game's wiki page when you open it" } },
+]
