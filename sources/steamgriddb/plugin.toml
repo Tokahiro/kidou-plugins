@@ -1,0 +1,20 @@
+id = "steamgriddb"
+name = "SteamGridDB"
+badge = "SGDB"
+version = "1.0.0"
+author = "Kidō"
+category = "source"
+api = "2.0.0"
+
+[grants]
+network = [
+    { host = "www.steamgriddb.com", why = { de = "Sucht mit deinem Schlüssel Bilder zu deinen Spielen", en = "Looks up art for your games with your key" } },
+]
+hosts = [
+    { host = "cdn2.steamgriddb.com", why = { de = "Lädt die gefundenen Bilder", en = "Downloads the art it found" } },
+]
+
+[[settings]]
+key = "api_key"
+label = { en = "SteamGridDB key", de = "SteamGridDB-Schlüssel" }
+secret = true

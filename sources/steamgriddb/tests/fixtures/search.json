@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 901,
+      "name": "Sample Quest: Remastered",
+      "release_date": 1577836800,
+      "types": [
+        "steam"
+      ],
+      "verified": true
+    },
+    {
+      "id": 902,
+      "name": "Sample Quest",
+      "release_date": null,
+      "types": [
+        "gog"
+      ],
+      "verified": false
+    },
+    {
+      "id": 903,
+      "name": "SAMPLE QUEST™",
+      "release_date": 1262304000,
+      "types": [
+        "steam",
+        "gog"
+      ],
+      "verified": true
+    },
+    {
+      "id": 904,
+      "name": "Sample Quest",
+      "release_date": 1262304000,
+      "types": [],
+      "verified": true
+    }
+  ]
+}
