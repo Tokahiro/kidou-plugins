@@ -5,8 +5,8 @@
 //! on a Home layout at the install. Whether a manifest is one Kidō takes is Kidō's check alone.
 //!
 //! A plugin with code is built for `wasm32-wasip2` before it is packed. The compiler, the
-//! locked dependencies and the release profile are fixed in this repository, so the same source
-//! gives the same component.
+//! locked dependencies and the release profile are fixed in this repository, and the cargo home
+//! is written as `/cargo`, so the same source gives the same component on any Linux host.
 
 use std::fmt::Write as _;
 use std::fs;
@@ -141,6 +141,7 @@ impl Source {
         let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
         let built = Command::new(cargo)
             .current_dir(&self.root)
+            .env("CARGO_ENCODED_RUSTFLAGS", remap_cargo_home())
             .args(["build", "--locked", "--quiet", "--release"])
             .args(["--target", TARGET, "-p", name, "--target-dir"])
             .arg(&target)
@@ -160,6 +161,20 @@ impl Source {
         }
         Ok(bytes)
     }
+}
+
+/// The flag that writes the cargo home as `/cargo` in a component, where a dependency's panic
+/// messages name its source files.
+fn remap_cargo_home() -> String {
+    let home = std::env::var_os("CARGO_HOME")
+        .map(PathBuf::from)
+        .or_else(|| {
+            let user = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"))?;
+            Some(PathBuf::from(user).join(".cargo"))
+        });
+    home.map_or_else(String::new, |home| {
+        format!("--remap-path-prefix={}=/cargo", home.display())
+    })
 }
 
 /// Each plugin with its source under `root`, by category and id; refuses a manifest whose id is
