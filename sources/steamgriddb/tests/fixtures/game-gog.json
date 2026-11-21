@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "data": {
+    "id": 5247,
+    "name": "Sample Quest",
+    "release_date": 1262304000,
+    "types": [
+      "steam",
+      "gog"
+    ],
+    "verified": true
+  }
+}
