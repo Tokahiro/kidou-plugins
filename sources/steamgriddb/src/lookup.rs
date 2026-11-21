@@ -18,9 +18,8 @@ use crate::title;
 /// The key of the setting that holds the player's key.
 pub const KEY: &str = "api_key";
 
-/// The least time between the starts of two requests of the API, and between a call's start and
-/// its first request: Kidō makes calls back to back, each in a new instance that cannot know
-/// when the call before it last asked.
+/// The least time between the starts of two requests of the API within one call. Kidō paces the
+/// calls themselves, at least a second apart.
 pub const PACE: Duration = Duration::from_secs(1);
 
 /// How many seconds SteamGridDB is left alone when it asks for that without saying how long.
@@ -200,11 +199,10 @@ pub fn about(
     if !shaped(key) {
         return Err(Problem::Refused);
     }
-    let start = clock.now();
     let mut lookup = Lookup {
         http,
         clock,
-        last: start,
+        last: None,
         bearer: format!("Bearer {key}"),
     };
     lookup.find(game, kinds).map_err(|problem| match problem {
@@ -222,8 +220,8 @@ fn shaped(key: &str) -> bool {
 struct Lookup<'a> {
     http: &'a mut dyn Http,
     clock: &'a mut dyn Clock,
-    /// When the last request, or else the call, started.
-    last: Instant,
+    /// When the last request started.
+    last: Option<Instant>,
     bearer: String,
 }
 
@@ -329,16 +327,16 @@ impl Lookup<'_> {
         })
     }
 
-    /// Waits until [`PACE`] has passed since the last request, or else the call, started.
+    /// Waits until [`PACE`] has passed since the last request started.
     fn pace(&mut self) {
         let now = self.clock.now();
-        let wait = (self.last.checked_add(PACE))
+        let wait = (self.last.and_then(|last| last.checked_add(PACE)))
             .and_then(|next| next.checked_duration_since(now))
             .filter(|wait| !wait.is_zero());
         if let Some(wait) = wait {
             self.clock.sleep(wait);
         }
-        self.last = self.clock.now();
+        self.last = Some(self.clock.now());
     }
 }
 

@@ -1,7 +1,7 @@
 id = "steamgriddb"
 name = "SteamGridDB"
 badge = "SGDB"
-version = "1.0.0"
+version = "1.1.0"
 author = "Kidō"
 category = "source"
 api = "2.0.0"

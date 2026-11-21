@@ -67,6 +67,15 @@ The pictures show Kidō's test library, with painted covers in place of real art
 
 The GOG Galaxy plugin is built from Kidō's own store code, so this repository holds its package and not its source.
 
+### Sources
+
+| Plugin | What it adds |
+| --- | --- |
+| **SteamGridDB** · [source](sources/steamgriddb) | Covers, heroes and logos for games that lack them, with your own SteamGridDB key. |
+| **IGDB** · [source](sources/igdb) | How long a game takes to beat, on its page, with your own Twitch app's client ID and secret. |
+
+Type in a source plugin's key under Settings › Stores › Plugins.
+
 ## Install a Plugin
 
 1. In Kidō, open Settings › Stores › Plugins and choose "Add plugins".

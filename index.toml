@@ -70,6 +70,18 @@ version = "1.0.0"
 package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/pcgamingwiki-1.0.0.kidouplug"
 sha256 = "bff349c0d6c73093d131161b382a23613471ef3f37876e11b998818d251a96a9"
 
+[[plugin]]
+id = "steamgriddb"
+name = "SteamGridDB"
+category = "source"
+about = "Covers, heroes and logos from SteamGridDB, with your own key"
+
+[[plugin]]
+id = "igdb"
+name = "IGDB"
+category = "source"
+about = "How long a game takes to beat, from IGDB, with your own Twitch app"
+
 [[pack]]
 id = "home_layouts"
 name = "Alle Startseiten"
