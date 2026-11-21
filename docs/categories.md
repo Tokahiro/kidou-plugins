@@ -29,6 +29,7 @@ A `store` or `source` plugin with tiles also exports `kidou:tiles` 1.x ([`wit/ti
 It isn't on Kidō's list yet.
 [`sources/steamgriddb`](../sources/steamgriddb) is a source plugin: it looks up art at SteamGridDB with the player's own key.
 [`sources/igdb`](../sources/igdb) gives a game's time to beat from IGDB with the player's own Twitch app.
+[`sources/pcgamingwiki`](../sources/pcgamingwiki) gives a few facts from a game's PCGamingWiki page, such as its controller support and frame rate; they're under CC BY-NC-SA 3.0.
 It isn't on Kidō's list yet either.
 
 ## The Manifest

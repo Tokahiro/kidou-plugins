@@ -1893,6 +1893,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kidou-plugin-pcgamingwiki"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "kidou-plugin-steamgriddb"
 version = "0.0.0"
 dependencies = [
