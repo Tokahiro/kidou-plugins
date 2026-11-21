@@ -28,6 +28,7 @@ A `store` or `source` plugin with tiles also exports `kidou:tiles` 1.x ([`wit/ti
 [`devices/onexconsole`](../devices/onexconsole) is a device plugin built on them: it shows OneXConsole's presets on a OneXPlayer and opens OneXConsole.
 It isn't on Kidō's list yet.
 [`sources/steamgriddb`](../sources/steamgriddb) is a source plugin: it looks up art at SteamGridDB with the player's own key.
+[`sources/igdb`](../sources/igdb) gives a game's time to beat from IGDB with the player's own Twitch app.
 It isn't on Kidō's list yet either.
 
 ## The Manifest

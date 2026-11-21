@@ -1,0 +1,20 @@
+id = "igdb"
+name = "IGDB"
+badge = "IGDB"
+version = "1.0.0"
+author = "Kidō"
+category = "source"
+api = "2.0.0"
+
+[grants]
+network = ["id.twitch.tv", "api.igdb.com"]
+
+[[settings]]
+key = "client_id"
+label = { en = "IGDB client ID", de = "IGDB-Client-ID" }
+secret = true
+
+[[settings]]
+key = "client_secret"
+label = { en = "IGDB client secret", de = "IGDB-Client-Secret" }
+secret = true

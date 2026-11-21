@@ -1877,6 +1877,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kidou-plugin-igdb"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "kidou-plugin-onexconsole"
 version = "0.0.0"
 dependencies = [
