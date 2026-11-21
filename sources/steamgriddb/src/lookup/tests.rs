@@ -515,23 +515,20 @@ fn a_wait_asked_for_midway_drops_what_was_found() {
 }
 
 #[test]
-fn requests_start_at_least_a_second_apart_within_a_call_and_across_calls() {
+fn requests_within_a_call_start_at_least_a_second_apart() {
     let mut rig = steam_rig();
     let _ = rig.steam("620", ALL);
-    assert_eq!(rig.clock.slept, [PACE, PACE, PACE]);
+    assert_eq!(rig.clock.slept, [PACE, PACE]);
     let _ = rig.steam("620", &[Kind::Square]);
     assert_eq!(
         rig.clock.slept,
-        [PACE, PACE, PACE, PACE],
-        "a call's first request waits as if the call before it had just asked"
+        [PACE, PACE],
+        "a call's first request does not wait: Kidō paces the calls"
     );
-    rig.clock.now += PACE / 2;
-    let _ = rig.steam("620", &[Kind::Square]);
-    assert_eq!(rig.clock.slept.last(), Some(&PACE));
     let _ = rig.steam("620", &[]);
     assert_eq!(
         rig.clock.slept.len(),
-        5,
+        2,
         "a call without a request does not wait"
     );
 }

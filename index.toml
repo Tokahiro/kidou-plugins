@@ -60,6 +60,18 @@ about = "Home layout: the pages in a rail at the left, with group tabs"
 package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/shrine-1.2.3.kidouplug"
 sha256 = "169c81c7daf7815184c9d68869d242bde001e6cde6ed4e550b83e18d60346897"
 
+[[plugin]]
+id = "steamgriddb"
+name = "SteamGridDB"
+category = "source"
+about = "Covers, heroes and logos from SteamGridDB, with your own key"
+
+[[plugin]]
+id = "igdb"
+name = "IGDB"
+category = "source"
+about = "How long a game takes to beat, from IGDB, with your own Twitch app"
+
 [[pack]]
 id = "home_layouts"
 name = "Alle Startseiten"
