@@ -34,13 +34,13 @@ strip = true
 # the layout check uses is named here. Kidō's own build names the same commit: change both
 # together.
 [patch.crates-io]
-i-slint-core = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-i-slint-core-macros = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-i-slint-common = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-i-slint-compiler = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-slint-interpreter = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-i-slint-backend-selector = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-vtable = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-vtable-macro = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-const-field-offset = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
-const-field-offset-macro = { git = "https://github.com/Tokahiro/slint", rev = "67a61ac87d7d66697c62edfb0e9b138076e06110" }
+i-slint-core = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+i-slint-core-macros = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+i-slint-common = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+i-slint-compiler = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+slint-interpreter = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+i-slint-backend-selector = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+vtable = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+vtable-macro = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+const-field-offset = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
+const-field-offset-macro = { git = "https://github.com/Tokahiro/slint", rev = "8545add575a5ef7c0f45d59e7b815f9c6cf330f1" }
