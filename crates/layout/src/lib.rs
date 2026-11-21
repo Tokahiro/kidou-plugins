@@ -47,7 +47,8 @@ pub const CONTRACT: (&str, &str) = (
 );
 
 /// The version of the contract [`CONTRACT`] and [`PARTS`] hold: the latest a layout's `api` may
-/// name. A name they export more is a new minor version.
+/// name. A name they export more is a new minor version; from Kidō's first release on, a change
+/// that breaks a layout is a new major version (`docs/layouts.md`, "Contract Versions").
 pub const VERSION: &str = "3.1.0";
 
 /// Kidō's parts a layout may import beside [`CONTRACT`], by their name, as (name, text): Home
