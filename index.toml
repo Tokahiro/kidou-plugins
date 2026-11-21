@@ -61,6 +61,16 @@ package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/package
 sha256 = "169c81c7daf7815184c9d68869d242bde001e6cde6ed4e550b83e18d60346897"
 
 [[plugin]]
+id = "pcgamingwiki"
+name = "PCGamingWiki"
+category = "source"
+api = "2.0.0"
+about = "Game facts from PCGamingWiki, CC BY-NC-SA 3.0"
+version = "1.0.0"
+package = "https://raw.githubusercontent.com/Tokahiro/kidou-plugins/main/packages/pcgamingwiki-1.0.0.kidouplug"
+sha256 = "bff349c0d6c73093d131161b382a23613471ef3f37876e11b998818d251a96a9"
+
+[[plugin]]
 id = "steamgriddb"
 name = "SteamGridDB"
 category = "source"

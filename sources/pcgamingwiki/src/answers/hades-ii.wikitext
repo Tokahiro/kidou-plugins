@@ -1,0 +1,169 @@
+{{Infobox game
+|cover        = Hades II cover.jpg
+|developers   =
+{{Infobox game/row/developer|Supergiant Games}}
+|publishers   =
+|engines      =
+{{Infobox game/row/engine|The Forge|Renderer}}
+|release dates=
+{{Infobox game/row/date|Windows|September 25, 2025}}
+{{Infobox game/row/date|OS X|September 25, 2025}}
+|reception    =
+{{Infobox game/row/reception|Metacritic|hades-ii|94}}
+{{Infobox game/row/reception|OpenCritic|16683/hades-ii|94}}
+{{Infobox game/row/reception|IGDB|hades-ii|93}}
+|real ai level= 0
+|taxonomy     =
+{{Infobox game/row/taxonomy/monetization      | One-time game purchase, Subscription gaming service }}
+{{Infobox game/row/taxonomy/microtransactions | None }}
+{{Infobox game/row/taxonomy/modes             | Singleplayer }}
+{{Infobox game/row/taxonomy/pacing            | Real-time }}
+{{Infobox game/row/taxonomy/perspectives      | Isometric }}
+{{Infobox game/row/taxonomy/controls          | Direct control }}
+{{Infobox game/row/taxonomy/genres            | Action, Roguelike }}
+{{Infobox game/row/taxonomy/sports            | }}
+{{Infobox game/row/taxonomy/vehicles          | }}
+{{Infobox game/row/taxonomy/art styles        | Stylized }}
+{{Infobox game/row/taxonomy/themes            | Classical, Fantasy }}
+{{Infobox game/row/taxonomy/series            | Hades }}
+|steam appid  = 1145350
+|steam appid side =
+|gogcom id    =
+|gogcom id side =
+|official site= https://www.supergiantgames.com/games/hades-ii/
+|hltb         = 118218
+|lutris       = hades-ii
+|mobygames    = 223472
+|strategywiki =
+|wikipedia    = Hades II
+|winehq       =
+|license      = commercial
+}}
+
+{{Introduction
+|introduction      =
+
+|release history   = The game entered early access on Steam and Epic Games Store on May 6, 2024. The full version (v1.0) was released on September 25, 2025.
+
+|current state     =
+}}
+
+'''General information'''
+{{mm}} [https://www.supergiantgames.com/blog/hades2-faq Official FAQ]
+{{mm}} [http://www.discord.gg/Supergiant Developer Discord server]
+{{mm}} [https://steamcommunity.com/app/1145350/discussions/ Steam Community Discussions]
+
+==Availability==
+{{Availability|
+{{Availability/row| Epic Games Store | hades-ii | DRM-free | Windows version is DRM-free when run via Hades2.exe in the Ship folder| | Windows, OS X }}
+{{Availability/row| Steam | 1145350 | Steam | | | Windows, OS X }}
+{{Availability/row| Microsoft Store | 9PCR3Z2MSM4T | Microsoft Store | {{store feature|Xbox Play Anywhere}}.Included with {{store feature|Xbox Game Pass}}. | | Windows }}
+}}
+
+==Game data==
+===Save game data location===
+{{Game data|
+{{Game data/saves|Windows|{{p|userprofile}}\Saved Games\Hades II\Profile*.sav}}
+{{Game data/saves|Microsoft Store|{{P|localappdata}}Path\Packages\SupergiantGamesLLC.HadesII_q53c1yqmx7pha\SystemAppData\wgs\}}
+{{Game data/saves|OS X|{{p|osxhome}}/Library/Application Support/Supergiant Games/Hades II/Profile*.sav}}
+}}
+
+===[[Glossary:Save game cloud syncing|Save game cloud syncing]]===
+{{Save game cloud syncing
+|discord                   =
+|discord notes             =
+|epic games launcher       = true
+|epic games launcher notes =
+|gog galaxy                =
+|gog galaxy notes          =
+|origin                    =
+|origin notes              =
+|icloud                    =
+|icloud notes              =
+|steam cloud               = true
+|steam cloud notes         =
+|ubisoft connect           =
+|ubisoft connect notes     =
+|xbox cloud                = true
+|xbox cloud notes          =
+}}
+
+==Video==
+{{Video
+|wsgf link                  = https://www.wsgf.org/dr/hades-ii/en
+|widescreen wsgf award      = gold
+|multimonitor wsgf award    = silver
+|ultrawidescreen wsgf award = gold
+|4k ultra hd wsgf award     = gold
+|widescreen resolution      = true
+|widescreen resolution notes= Native 16:9 support (scaled up/down from the internal viewport of 1920x1080); see [[#16:10 (Steam Deck)|16:10 (Steam Deck)]] for 16:10 support.
+|multimonitor               = hackable
+|multimonitor notes         = See [[#Multi-monitor|Multi-monitor]].
+|ultrawidescreen            = true
+|ultrawidescreen notes      = See [[#Ultra-widescreen|Ultra-widescreen]].
+|4k ultra hd                = true
+|4k ultra hd notes          = Upscaled from the internal viewport of 1920x1080.
+|fov                        = n/a
+|fov notes                  =
+|windowed                   = true
+|windowed notes             = See [[#Windowed|Windowed]].
+|borderless windowed        = true
+|borderless windowed notes  = See [[#Windowed|Windowed]].
+|anisotropic                = n/a
+|anisotropic notes          =
+|antialiasing               = n/a
+|antialiasing notes         =
+|upscaling                  = false
+|upscaling tech             =
+|upscaling notes            =
+|framegen                   = unknown
+|framegen tech              =
+|framegen notes             =
+|vsync                      = true
+|vsync notes                =
+|60 fps                     = true
+|60 fps notes               =
+|120 fps                    = true
+|120 fps notes              = Limited to a maximum of 600 FPS.{{Refcheck|user=Shadowstealer7|date=2024-05-07}}
+|hdr                        = false
+|hdr notes                  =
+|ray tracing                = false
+|ray tracing notes          =
+|color blind                = false
+|color blind notes          =
+}}
+
+==Input==
+{{Input
+|key remap                 = true
+|key remap notes           =
+|mouse menu                = true
+|mouse menu notes          =
+|controller support        = true
+|controller support notes  =
+|full controller           = true
+|full controller notes     =
+|controller remap          = true
+|controller remap notes    =
+|xinput controllers        = true
+|xinput controllers notes  =
+|xbox prompts              = true
+|xbox prompts notes        = Listed as '''Type A''' button prompts.
+|playstation controllers   = true
+|playstation controller models = DualShock 4, DualSense
+|other controllers         = true
+|other controllers notes   = [[Controller:Nintendo Switch Pro Controller|Nintendo Switch Pro Controller]] is supported via Steam Input.
+|controller hotplug        = true
+|controller hotplug notes  =
+|steam input api           = false
+|steam input api notes     =
+|steam deck prompts  = true
+|steam deck prompts notes =
+}}
+
+==Other information==
+===API===
+{{API
+|direct3d versions      = 12
+|windows 64-bit exe     = true
+}}
