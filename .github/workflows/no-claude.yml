@@ -26,19 +26,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
-          TITLE: ${{ github.event.pull_request.title }}
-          BODY: ${{ github.event.pull_request.body }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-          ABOUT_CLAUDE: ${{ contains(github.event.pull_request.labels.*.name, 'about-claude') }}
+        # A pull request opened from a cloud session gets a footer that the session removes
+        # seconds later. The pause lets that edit cancel this run instead of leaving a failure.
         run: |
-          commits=$(gh api "repos/$REPO/pulls/$PR/commits" --paginate \
-            --jq '.[].commit | .message, "\(.author.name) <\(.author.email)>", "\(.committer.name) <\(.committer.email)>"')
-          all=$(printf '%s\n%s\n%s\n%s\n' "$TITLE" "$BODY" "$BRANCH" "$commits")
-          hard='co-authored-by:[[:space:]]*claude|generated (by|with) \[?claude|claude\.(ai|com)/|claude-session:|anthropic\.com>|^claude/'
-          bad=$(printf '%s\n' "$all" | grep -inE "$hard" || true)
-          if [ "$ABOUT_CLAUDE" != "true" ]; then
-            soft=$(printf '%s\n' "$all" | sed -E 's#claude\.md|\.claude/##gI' | grep -in 'claude' || true)
-            bad=$(printf '%s\n%s\n' "$bad" "$soft" | sort -u | sed '/^$/d')
+          find_bad() {
+            about=$(gh api "repos/$REPO/pulls/$PR" --jq '[.labels[].name] | index("about-claude") != null') || exit 1
+            pr=$(gh api "repos/$REPO/pulls/$PR" --jq '.title, .body // "", .head.ref') || exit 1
+            commits=$(gh api "repos/$REPO/pulls/$PR/commits" --paginate \
+              --jq '.[].commit | .message, "\(.author.name) <\(.author.email)>", "\(.committer.name) <\(.committer.email)>"') || exit 1
+            all=$(printf '%s\n%s\n' "$pr" "$commits")
+            hard='co-authored-by:[[:space:]]*claude|generated (by|with) \[?claude|claude\.(ai|com)/|claude-session:|anthropic\.com>|^claude/'
+            bad=$(printf '%s\n' "$all" | grep -inE "$hard" || true)
+            if [ "$about" != "true" ]; then
+              soft=$(printf '%s\n' "$all" | sed -E 's#claude\.md|\.claude/##gI' | grep -in 'claude' || true)
+              bad=$(printf '%s\n%s\n' "$bad" "$soft" | sort -u | sed '/^$/d')
+            fi
+            printf '%s' "$bad"
+          }
+          bad=$(find_bad)
+          if [ -n "$bad" ]; then
+            sleep 60
+            bad=$(find_bad)
           fi
           if [ -n "$bad" ]; then
             printf 'Remove these lines from the title, description, branch name or commit messages:\n%s\n' "$bad"
