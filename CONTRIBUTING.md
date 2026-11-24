@@ -33,6 +33,8 @@ After the merge it packs the new version, adds the file to `packages/` and updat
 Players get it the next time they open "Add plugins".
 
 A new plugin also needs its `[[plugin]]` entry in `index.toml`, with its `id`, `name`, `category` and `about` only: CI adds `version`, `api`, `package` and `sha256`.
+Write `about` as one line in English and in German, `about = { en = "…", de = "…" }`: Kidō shows the one in its language.
+Write the German as a German would say it, not as a translation of the English.
 Kidō offers a listed plugin only where it runs the plugin's `api`.
 Until it has that entry, CI checks and builds the source, and writes no package.
 
